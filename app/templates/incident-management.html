@@ -1,0 +1,590 @@
+{% extends 'base.html' %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incident Management - QHSE System</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Extra styles for Incident Management */
+
+        .status-badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: white;
+        }
+
+        .status-open {
+            background-color: #ef4444;
+        }
+
+        .status-in-progress {
+            background-color: #f97316;
+        }
+
+        .status-closed {
+            background-color: #22c55e;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab {
+            cursor: pointer;
+            padding: 8px 16px;
+            border-bottom: 2px solid transparent;
+            display: inline-block;
+        }
+
+        .tab.active {
+            border-bottom: 2px solid #3b82f6;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <!-- Sidebar -->
+        <div
+            class="sidebar fixed inset-y-0 left-0 z-30 w-64 bg-white text-black flex flex-col shadow-xl overflow-hidden">
+
+            <!-- Logo / Brand header -->
+            <div class="p-6 flex flex-col items-center border-b border-white">
+                <!-- Yin-Yang logo using register-bg.jpg -->
+                <div class="mb-2 relative">
+                    <img src="/static/images/register-bg.jpg" alt="QHSE Logo"
+                        class="w-100 h-100 rounded-xl object-cover ring-2 ring-white shadow-2xl" />
+                    <!-- Optional subtle overlay/glow effect -->
+                    <div
+                        class="absolute inset-0 rounded-xl bg-gradient-to-b from-transparent via-transparent to-black/30 pointer-events-none">
+                    </div>
+                </div>
+
+                <!-- Optional small brand text under logo 
+                <h2 class="text-lg font-semibold tracking-wide text-black text-center">
+                    QHSE Management System
+                </h2> -->
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 px-3 pt-2 pb-5 overflow-y-auto">
+                <ul class="menu space-y-1.5">
+                    <li data-section="dashboard-section" class="group">
+                        <a href="javascript:void(0)" class="block px-5 py-3 text-black 
+                                  group-hover:text-white group-hover:bg-gray-800/30 group-hover:rounded-lg 
+                                  group-[.active]:pl-5 group-[.active]:pr-0 group-[.active]:py-3.5 
+                                  group-[.active]:bg-red-600 group-[.active]:text-white 
+                                  group-[.active]:font-medium group-[.active]:rounded-l-full 
+                                  transition-colors">
+                            Dashboard
+                        </a>
+                    </li>
+
+                    <li data-section="audit-section" class="group">
+                        <a href="javascript:void(0)" class="block px-5 py-3 text-black 
+                                  group-hover:text-white group-hover:bg-gray-800/30 group-hover:rounded-lg 
+                                  group-[.active]:pl-5 group-[.active]:pr-0 group-[.active]:py-3.5 
+                                  group-[.active]:bg-red-600 group-[.active]:text-white 
+                                  group-[.active]:font-medium group-[.active]:rounded-l-full 
+                                  transition-colors">
+                            Audit Management
+                        </a>
+                    </li>
+
+                    <li data-section="incident-section" class="group">
+                        <a href="javascript:void(0)" class="block px-5 py-3 text-black 
+                                  group-hover:text-white group-hover:bg-gray-800/30 group-hover:rounded-lg 
+                                  group-[.active]:pl-5 group-[.active]:pr-0 group-[.active]:py-3.5 
+                                  group-[.active]:bg-red-600 group-[.active]:text-white 
+                                  group-[.active]:font-medium group-[.active]:rounded-l-full 
+                                  transition-colors">
+                            Incident Management
+                        </a>
+                    </li>
+
+                    <!-- Add all your other menu items in the same inactive style -->
+                    <!-- Example:
+                    <li data-section="training-section">
+                        <a href="javascript:void(0)" class="block px-5 py-3 text-black hover:text-white hover:bg-gray-800/30 rounded-lg transition-colors">
+                            Training & Briefings
+                        </a>
+                    </li>
+                    -->
+
+
+                    <!-- Add other items like the inactive ones above -->
+
+
+                    <!-- add other items the same way (without .active) -->
+
+
+                    <!-- Uncomment when needed -->
+                    <!--
+                    <li data-section="training-section">
+                        <a href="javascript:void(0)" class="group flex items-center gap-3 px-4 py-3 rounded-xl text-black hover:bg-gray-800/70 hover:text-white transition-all duration-200">
+                            <span class="text-xl opacity-80 group-hover:opacity-100">🎓</span>
+                            Training & Briefings
+                        </a>
+                    </li>
+        
+                    <li data-section="docs-section">
+                        <a href="javascript:void(0)" class="group flex items-center gap-3 px-4 py-3 rounded-xl text-black hover:bg-gray-800/70 hover:text-white transition-all duration-200">
+                            <span class="text-xl opacity-80 group-hover:opacity-100">📄</span>
+                            Document Management
+                        </a>
+                    </li>
+                    -->
+                </ul>
+            </nav>
+
+            <!-- Optional footer / version info -->
+            <div class="p-4 text-xs text-gray-600 border-t border-gray-800/60 text-center">
+                © 2026 • QHSE System
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div
+            class="main-content flex-1 ml-64 bg-[url('/static/images/register-bg.jpg')] bg-cover bg-center bg-no-repeat min-h-screen">
+            <div class="header">
+                <div class="breadcrumb" id="breadcrumb">Home / Incident Management</div>
+                <div class="flex items-center gap-3">
+                    {% if current_user.is_authenticated %}
+                    <div class="text-sm">{{ current_user.full_name }}</div>
+                    <div
+                        class="w-10 h-10 rounded-xl bg-[#E10600] text-white flex items-center justify-center font-bold">
+                        {{ current_user.full_name.split(' ')[0][0] ~ (current_user.full_name.split(' ')[1][0] if
+                        current_user.full_name.split(' ')|length > 1 else '') }}
+                    </div>
+                    <a href="{{ url_for('auth.logout') }}"
+                        class="ml-2 px-3 py-1 rounded bg-red-500 text-white text-sm hover:bg-red-600 transition">
+                        Logout
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('auth.login') }}"
+                        class="px-4 py-1.5 rounded bg-[#E10600] text-white text-sm hover:brightness-110 transition">
+                        Login
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <h1 class="page-title" id="pageTitle">Incident Management</h1>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <div class="tab active" data-tab="incident-dashboard">Dashboard</div>
+                <div class="tab" data-tab="all-incidents">All Incidents</div>
+                <div class="tab" data-tab="new-incident">New Incident</div>
+                <div class="tab" data-tab="incident-details">Incident Details</div>
+                <div class="tab" data-tab="document-management">Document Management</div>
+                <div class="tab" data-tab="trainings-briefings">Trainings & Briefings</div>
+            </div>
+
+            <!-- All Incidents Tab -->
+            <div class="tab-content active" id="all-incidents">
+                <div class="table-container">
+                    <h3>All Incidents</h3>
+
+                    <div class="table-actions">
+                        <input type="text" placeholder="Search incidents..." id="incidentSearch"
+                            onkeyup="filterIncidents()">
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Department</th>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Employees</th>
+                                <th>Hours Lost</th>
+                                <th>Total Cost ($)</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="incident-table-body">
+                            <!-- Example static row with buttons -->
+                            <tr>
+                                <td>1</td>
+                                <td>Operations</td>
+                                <td>2025-12-10</td>
+                                <td>Incident</td>
+                                <td>3</td>
+                                <td>12</td>
+                                <td>150</td>
+                                <td>Pending</td>
+                                <td>
+                                    <button class="view-btn btn btn-primary" onclick="viewIncident(id)">View</button>
+                                    <button class="edit-btn btn btn-warning" onclick="editIncident(id)">Edit</button>
+                                    <button class="delete-btn btn btn-danger"
+                                        onclick="deleteIncident(id)">Delete</button>
+                                </td>
+                            </tr>
+                            <!-- Add more rows dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- New Incident Tab -->
+            <div class="tab-content" id="new-incident">
+                <div class="form-container">
+                    <h3>Report New Incident</h3>
+
+                    <form id="newIncidentForm" onsubmit="event.preventDefault(); submitIncident();">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="incident-title">Incident Title</label>
+                                <input type="text" id="incident-title" placeholder="e.g., Fuel spill near pump 3">
+                            </div>
+                            <div class="form-group">
+                                <label for="incident-department">Department</label>
+                                <select id="incident-department">
+                                    <option value="">Select Department</option>
+                                    <option value="Finance">Finance</option>
+                                    <option value="Logistics">Logistics</option>
+                                    <option value="Field Operations">Field Operations</option>
+                                    <option value="Administration">Admin</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="incident-category">Category</label>
+                                <select id="incident-category">
+                                    <option value="">Select Category</option>
+                                    <option>Falls</option>
+                                    <option>Cuts</option>
+                                    <option>Fires</option>
+                                    <option>Spill</option>
+                                    <option>Injury</option>
+                                    <option>Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="incident-datetime">Date & Time</label>
+                                <input type="datetime-local" id="incident-datetime">
+                            </div>
+                            <div class="form-group">
+                                <label for="incident-location">Location</label>
+                                <input type="text" id="incident-location" placeholder="Pump station 2 / GPS">
+                            </div>
+                            <div class="form-group">
+                                <label for="incident-severity">Severity</label>
+                                <select id="incident-severity">
+                                    <option value="">Select Severity</option>
+                                    <option value="Low">Low</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="High">High</option>
+                                    <option value="Critical">Critical</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="incident-description">Description</label>
+                            <textarea id="incident-description" rows="4"
+                                placeholder="Describe what happened..."></textarea>
+                        </div>
+
+                        <!-- NEW: People/Cost fields -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="incident-employees">Number of people affected</label>
+                                <input type="number" id="incident-employees" min="0" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="incident-hours-per-employee">Hours lost per person</label>
+                                <input type="number" id="incident-hours-per-employee" min="0" step="0.5" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="incident-idle-hours">Idle time (hrs)</label>
+                                <input type="number" id="incident-idle-hours" min="0" step="0.1" value="0">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="incident-cost-per-hour">Cost per hour ($)</label>
+                                <input type="number" id="incident-cost-per-hour" min="0" step="0.01" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="incident-total-cost">Total cost ($)</label>
+                                <input type="text" id="incident-total-cost" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="incident-investigator">Assign Investigator</label>
+                                <select id="incident-investigator">
+                                    <option value="">Unassigned</option>
+                                    <option value="HSE Officer">HSE Officer</option>
+                                    <option value="Supervisor">Supervisor</option>
+                                    <option value="External Auditor">External Auditor</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Upload Evidence</label>
+                            <input type="file" id="incident-files" multiple accept="image/*,video/*,.pdf,.doc,.docx">
+                            <div id="file-list" class="file-list small"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <button class="btn btn-success" type="submit">Submit Incident</button>
+                        </div>
+                    </form>
+
+
+                    <!-- INCIDENT DETAILS TAB -->
+                    <div class="tab-content" id="incident-details">
+                        <div class="form-container">
+                            <h3>Incident Details</h3>
+
+                            <div class="form-group">
+                                <label>ID</label>
+                                <input type="text" id="detail-id" readonly>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Title</label>
+                                <input type="text" id="detail-title" readonly>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Department</label>
+                                <input type="text" id="detail-department" readonly>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Type</label>
+                                <input type="text" id="detail-type" readonly>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Date</label>
+                                <input type="text" id="detail-date" readonly>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Description</label>
+                                <textarea id="detail-description" rows="4" readonly></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Employees Affected</label>
+                                <input type="text" id="detail-employees" readonly>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Total Hours Lost</label>
+                                <input type="text" id="detail-hours-lost" readonly>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Cost per Hour ($)</label>
+                                <input type="text" id="detail-cost-hour" readonly>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Total Cost ($)</label>
+                                <input type="text" id="detail-total-cost" readonly>
+                            </div>
+                            <p><strong>Idle Time:</strong> <span id="idleTime"></span></p>
+
+                        </div>
+                    </div>
+
+
+                    <script>
+                        // ----- Tab switching -----
+                        const tabs = document.querySelectorAll('.tab');
+                        const contents = document.querySelectorAll('.tab-content');
+                        tabs.forEach(tab => {
+                            tab.addEventListener('click', () => {
+                                tabs.forEach(t => t.classList.remove('active'));
+                                tab.classList.add('active');
+                                const target = tab.dataset.tab;
+                                contents.forEach(c => c.classList.remove('active'));
+                                document.getElementById(target).classList.add('active');
+                            });
+                        });
+
+                        // ----- Filter incidents -----
+                        function filterIncidents() {
+                            const input = document.getElementById('incidentSearch').value.toLowerCase();
+                            const rows = document.querySelectorAll('#incident-table-body tr');
+                            rows.forEach(row => {
+                                row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none';
+                            });
+                        }
+
+                        // ----- Incident data storage -----
+                        let incidents = [];
+                        let incidentIdCounter = 1;
+
+                        // ----- Render incidents table -----
+                        function renderIncidentTable() {
+                            const tbody = document.getElementById('incident-table-body');
+                            tbody.innerHTML = '';
+                            incidents.forEach(incident => {
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                        <td>${incident.id}</td>
+                        <td>${incident.department}</td>
+                        <td>${incident.date}</td>
+                        <td>${incident.type || incident.category || ''}</td>
+                        <td><span class="status-badge status-${incident.status.toLowerCase()}">${incident.status}</span>
+                        </td>
+                        // Assuming you're inside a loop over incidents
+                        const td = document.createElement('td');
+
+                        // View button
+                        const viewBtn = document.createElement('button');
+                        viewBtn.className = 'btn btn-primary btn-small';
+                        viewBtn.textContent = 'View';
+                        viewBtn.onclick = () => viewIncident(incident.id);
+                        td.appendChild(viewBtn);
+
+                        // Conditionally add Close button if status is Open
+                        if (incident.status === 'Open') {
+                            const closeBtn = document.createElement('button');
+                            closeBtn.className = 'btn btn-success btn-small';
+                            closeBtn.textContent = 'Close';
+                            closeBtn.onclick = () => closeIncident(closeBtn);
+                            td.appendChild(closeBtn);
+                        }
+
+                        // Then append td to your table row
+                        row.appendChild(td);
+
+                        `;
+                                tbody.appendChild(row);
+                            });
+                        }
+
+                        // ----- View incident details -----
+                        function viewIncident(id) {
+                            const data = incidents.find(i => i.id === id);
+                            if (!data) return alert('Incident not found');
+
+                            document.getElementById('detail-id').value = data.id;
+                            document.getElementById('detail-title').value = data.title;
+                            document.getElementById('detail-department').value = data.department;
+                            document.getElementById('detail-type').value = data.type || data.category || '';
+                            document.getElementById('detail-date').value = data.date;
+                            document.getElementById('detail-description').value = data.description;
+                            document.getElementById('detail-employees').value = data.employees_affected || 0;
+                            document.getElementById('detail-hours-lost').value = (data.hours_lost || 0) + " hours";
+                            document.getElementById('detail-cost-hour').value = "$" + (data.cost_per_hour || 0);
+                            document.getElementById('detail-total-cost').value = "$" + ((data.total_cost || 0).toFixed(2));
+                            document.getElementById('detail-investigator').value = data.investigator || '';
+
+                            // Switch to Incident Details tab
+                            tabs.forEach(t => t.classList.remove('active'));
+                            contents.forEach(c => c.classList.remove('active'));
+                            document.querySelector('[data-tab="incident-details"]').classList.add('active');
+                            document.getElementById('incident-details').classList.add('active');
+                        }
+
+                        // ----- Close incident -----
+                        function closeIncident(button) {
+                            const row = button.closest('tr');
+                            const id = parseInt(row.children[0].textContent);
+                            const incident = incidents.find(i => i.id === id);
+                            if (incident) incident.status = 'Closed';
+                            renderIncidentTable();
+                        }
+
+                        // ----- Submit new incident (local + optional backend) -----
+                        async function submitIncident() {
+                            const title = document.getElementById("incident-title").value.trim();
+                            const department = document.getElementById("incident-department").value;
+                            const category = document.getElementById("incident-category").value;
+                            const date = document.getElementById("incident-datetime").value;
+                            const location = document.getElementById("incident-location").value;
+                            const severity = document.getElementById("incident-severity").value;
+                            const description = document.getElementById("incident-description").value;
+                            const employees_affected = parseInt(document.getElementById("incident-employees").value) || 0;
+                            const hours_per_employee = parseFloat(document.getElementById("incident-hours-per-employee").value)
+                                || 0;
+                            const idle_hours = parseFloat(document.getElementById("incident-idle-hours").value) || 0;
+                            const cost_per_hour = parseFloat(document.getElementById("incident-cost-per-hour").value) || 0;
+                            const investigator = document.getElementById("incident-investigator").value || null;
+
+                            if (!title || !department || !date) {
+                                return alert('Please fill Title, Department and Date/Time');
+                            }
+
+                            const hours_lost = employees_affected * hours_per_employee;
+                            const total_cost = (hours_lost + idle_hours) * cost_per_hour;
+
+                            const incident = {
+                                id: incidentIdCounter++,
+                                title,
+                                department,
+                                category,
+                                type: category,
+                                date,
+                                location,
+                                severity,
+                                description,
+                                employees_affected,
+                                hours_per_employee,
+                                idle_hours,
+                                hours_lost,
+                                cost_per_hour,
+                                total_cost,
+                                investigator,
+                                status: "Open"
+                            };
+
+                            incidents.push(incident);
+                            renderIncidentTable();
+                            document.getElementById('newIncidentForm').reset();
+                            alert('Incident submitted successfully!');
+
+                            // Optional: send to backend
+                            try {
+                                const res = await fetch('/incidents/create', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(incident),
+                                    credentials: 'same-origin'
+                                });
+                                const data = await res.json();
+                                if (data.status !== 'ok') alert(data.message || 'Error saving incident');
+                            } catch (err) {
+                                console.error(err);
+                                alert('Network error saving incident');
+                            }
+
+                            // Switch to All Incidents tab
+                            tabs.forEach(t => t.classList.remove('active'));
+                            contents.forEach(c => c.classList.remove('active'));
+                            document.querySelector('[data-tab="all-incidents"]').classList.add('active');
+                            document.getElementById('all-incidents').classList.add('active');
+                        }
+                    </script>
+
+</body>
+
+</html>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block navbar %}{% endblock %}
+
+{% block title %}Register | Martian QHSE{% endblock %}
+
+{% block body_class %}bg-black{% endblock %}
+
+{% block background %}
+<!-- Background Image -->
+<div class="absolute inset-0 -z-10">
+  <div class="w-full h-full bg-[url('{{ url_for('static', filename='images/register-bg.jpg') }}')]
+           bg-cover bg-center blur-sm scale-105">
+  </div>
+  <div class="absolute inset-0 bg-black/40"></div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="w-full max-w-md animate-fade-in">
+
+  <div class="rounded-2xl p-8 bg-white/80 backdrop-blur-xl
+              shadow-[0_25px_60px_rgba(0,0,0,0.3)]
+              border border-white/30">
+
+    <!-- Header -->
+    <div class="text-center mb-6">
+      <h2 class="text-2xl font-bold text-[#E10600]">Create Your Account</h2>
+      <p class="text-sm text-[#E10600] mt-1">
+        Join Martian QHSE and manage safety effortlessly.
+      </p>
+    </div>
+
+    <!-- Form -->
+    <form method="POST" action="{{ url_for('auth.register') }}" class="space-y-4">
+      {{ form.hidden_tag() }}
+
+      <!-- Full Name -->
+      <div>
+        {{ form.full_name.label(class="block text-sm font-medium text-[#E10600] mb-1") }}
+        {{ form.full_name(class="w-full px-4 py-2 border border-gray-300 rounded-lg
+        focus:ring-2 focus:ring-[#E10600]/40 focus:border-[#E10600]
+        focus:outline-none bg-white/90") }}
+        {% if form.full_name.errors %}
+        <p class="text-red-500 text-sm mt-1">{{ form.full_name.errors[0] }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Email -->
+      <div>
+        {{ form.email.label(class="block text-sm font-medium text-[#E10600] mb-1") }}
+        {{ form.email(class="w-full px-4 py-2 border border-gray-300 rounded-lg
+        focus:ring-2 focus:ring-[#E10600]/40 focus:border-[#E10600]
+        focus:outline-none bg-white/90") }}
+        {% if form.email.errors %}
+        <p class="text-red-500 text-sm mt-1">{{ form.email.errors[0] }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Password -->
+      <div>
+        {{ form.password.label(class="block text-sm font-medium text-[#E10600] mb-1") }}
+        {{ form.password(class="w-full px-4 py-2 border border-gray-300 rounded-lg
+        focus:ring-2 focus:ring-[#E10600]/40 focus:border-[#E10600]
+        focus:outline-none bg-white/90") }}
+        {% if form.password.errors %}
+        <p class="text-red-500 text-sm mt-1">{{ form.password.errors[0] }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Confirm Password -->
+      <div>
+        {{ form.password2.label(class="block text-sm font-medium text-[#E10600] mb-1") }}
+        {{ form.password2(class="w-full px-4 py-2 border border-gray-300 rounded-lg
+        focus:ring-2 focus:ring-[#E10600]/40 focus:border-[#E10600]
+        focus:outline-none bg-white/90") }}
+        {% if form.password2.errors %}
+        <p class="text-red-500 text-sm mt-1">{{ form.password2.errors[0] }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Submit -->
+      <div>
+        {{ form.submit(
+        class="w-full py-2.5 rounded-lg font-semibold text-white
+        transition-all duration-200
+        hover:brightness-110 hover:shadow-lg",
+        style="background-color:#E10600;"
+        ) }}
+      </div>
+    </form>
+
+    <!-- Login Redirect -->
+    <p class="text-center text-sm text-gray-700 mt-6">
+      Already have an account?
+      <a href="{{ url_for('auth.login') }}" class="text-[#E10600] font-medium hover:underline">
+        Login here
+      </a>
+    </p>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.6s ease-out forwards;
+  }
+</style>
+{% endblock %}

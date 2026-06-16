@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Verify your email{% endblock %}
+{% block content %}
+<main class="form-container" style="max-width:520px;">
+    <div class="form-header">
+        <h3>Verify Email</h3>
+    </div>
+
+    <p class="note">A verification email was sent to <strong>{{ user.email }}</strong>. Click the link in the message to
+        verify your account.</p>
+
+    <form method="POST" action="{{ url_for('auth.resend_verification') }}">
+        <div class="form-group">
+            <button class="btn btn-primary" type="submit">Resend verification email</button>
+            <a class="btn btn-secondary" href="{{ url_for('main.index') }}">Home</a>
+        </div>
+    </form>
+</main>
+{% endblock %}

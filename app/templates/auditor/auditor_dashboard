@@ -1,0 +1,1468 @@
+{% extends 'base.html' %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QHSE Management System</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/static/script.js" defer></script>
+    <style>
+        /* Small integration styles used by the merged page */
+        .hidden {
+            display: none !important;
+        }
+
+        .status-badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #fff;
+        }
+
+        .status-open {
+            background: #ef4444;
+        }
+
+        .status-in-progress {
+            background: #f97316;
+        }
+
+        .status-closed {
+            background: #22c55e;
+        }
+
+        .tab {
+            cursor: pointer;
+            padding: 8px 16px;
+            border-bottom: 2px solid transparent;
+            display: inline-block;
+        }
+
+        .tab.active {
+            border-bottom: 2px solid #3b82f6;
+            font-weight: 700;
+        }
+
+        .tab-content {
+            display: none;
+            margin-top: 12px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .small {
+            font-size: 0.85rem;
+        }
+
+        .inline-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .file-list {
+            margin-top: 8px;
+        }
+
+        .capas-table td,
+        .capas-table th {
+            padding: 6px 8px;
+        }
+
+        .module-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .kpi {
+            display: inline-block;
+            padding: 10px 14px;
+            border-radius: 8px;
+            background: #f3f4f6;
+            margin-right: 8px;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .note {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 6px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <!-- Sidebar -->
+        <div
+            class="sidebar fixed inset-y-0 left-0 z-30 w-64 bg-white text-black flex flex-col shadow-xl overflow-hidden">
+
+            <!-- Logo / Brand header -->
+            <div class="p-6 flex flex-col items-center border-b border-white">
+                <!-- Yin-Yang logo using register-bg.jpg -->
+                <div class="mb-2 relative">
+                    <img src="/static/images/register-bg.jpg" alt="QHSE Logo"
+                        class="w-100 h-100 rounded-xl object-cover ring-2 ring-white shadow-2xl" />
+                    <!-- Optional subtle overlay/glow effect -->
+                    <div
+                        class="absolute inset-0 rounded-xl bg-gradient-to-b from-transparent via-transparent to-black/30 pointer-events-none">
+                    </div>
+                </div>
+
+                <!-- Optional small brand text under logo 
+                <h2 class="text-lg font-semibold tracking-wide text-black text-center">
+                    QHSE Management System
+                </h2> -->
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 px-3 pt-2 pb-5 overflow-y-auto">
+                <ul class="menu space-y-1.5">
+                    <li data-section="dashboard-section" class="group">
+                        <a href="javascript:void(0)" class="block px-5 py-3 text-black 
+                                  group-hover:text-white group-hover:bg-gray-800/30 group-hover:rounded-lg 
+                                  group-[.active]:pl-5 group-[.active]:pr-0 group-[.active]:py-3.5 
+                                  group-[.active]:bg-red-600 group-[.active]:text-white 
+                                  group-[.active]:font-medium group-[.active]:rounded-l-full 
+                                  transition-colors">
+                            Dashboard
+                        </a>
+                    </li>
+
+                    <li data-section="audit-section" class="group">
+                        <a href="javascript:void(0)" class="block px-5 py-3 text-black 
+                                  group-hover:text-white group-hover:bg-gray-800/30 group-hover:rounded-lg 
+                                  group-[.active]:pl-5 group-[.active]:pr-0 group-[.active]:py-3.5 
+                                  group-[.active]:bg-red-600 group-[.active]:text-white 
+                                  group-[.active]:font-medium group-[.active]:rounded-l-full 
+                                  transition-colors">
+                            Audit Management
+                        </a>
+                    </li>
+
+                    <li data-section="incident-section" class="group">
+                        <a href="javascript:void(0)" class="block px-5 py-3 text-black 
+                                  group-hover:text-white group-hover:bg-gray-800/30 group-hover:rounded-lg 
+                                  group-[.active]:pl-5 group-[.active]:pr-0 group-[.active]:py-3.5 
+                                  group-[.active]:bg-red-600 group-[.active]:text-white 
+                                  group-[.active]:font-medium group-[.active]:rounded-l-full 
+                                  transition-colors">
+                            Incident Management
+                        </a>
+                    </li>
+
+                    <!-- Add all your other menu items in the same inactive style -->
+                    <!-- Example:
+                    <li data-section="training-section">
+                        <a href="javascript:void(0)" class="block px-5 py-3 text-black hover:text-white hover:bg-gray-800/30 rounded-lg transition-colors">
+                            Training & Briefings
+                        </a>
+                    </li>
+                    -->
+
+
+                    <!-- Add other items like the inactive ones above -->
+
+
+                    <!-- add other items the same way (without .active) -->
+
+
+                    <!-- Uncomment when needed -->
+                    <!--
+                    <li data-section="training-section">
+                        <a href="javascript:void(0)" class="group flex items-center gap-3 px-4 py-3 rounded-xl text-black hover:bg-gray-800/70 hover:text-white transition-all duration-200">
+                            <span class="text-xl opacity-80 group-hover:opacity-100">🎓</span>
+                            Training & Briefings
+                        </a>
+                    </li>
+        
+                    <li data-section="docs-section">
+                        <a href="javascript:void(0)" class="group flex items-center gap-3 px-4 py-3 rounded-xl text-black hover:bg-gray-800/70 hover:text-white transition-all duration-200">
+                            <span class="text-xl opacity-80 group-hover:opacity-100">📄</span>
+                            Document Management
+                        </a>
+                    </li>
+                    -->
+                </ul>
+            </nav>
+
+            <!-- Optional footer / version info -->
+            <div class="p-4 text-xs text-gray-600 border-t border-gray-800/60 text-center">
+                © 2026 • QHSE System
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div
+            class="main-content flex-1 ml-64 bg-[url('/static/images/register-bg.jpg')] bg-cover bg-center bg-no-repeat min-h-screen">
+            <!-- --------------- DASHBOARD SECTION (placeholder) ---------------- -->
+            <div id="dashboard-section" class="hidden">
+                <div class="header">
+                    <div class="breadcrumb">Home / Dashboard</div>
+                    <div class="user-info"><span>John Doe</span>
+                        <div class="avatar">JD</div>
+                    </div>
+                </div>
+                <h1 class="page-title">Dashboard</h1>
+                <div class="module-header">
+                    <div>
+                        <div class="kpi"><strong id="kpi-open">0</strong>
+                            <div class="small">Open Incidents</div>
+                        </div>
+                        <div class="kpi"><strong id="kpi-inprogress">0</strong>
+                            <div class="small">In Progress</div>
+                        </div>
+                        <div class="kpi"><strong id="kpi-closed">0</strong>
+                            <div class="small">Closed</div>
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="exportIncidents()">Export CSV</button>
+                    </div>
+                </div>
+
+                <div class="table-container" style="margin-top:16px;">
+                    <h3>Recent Incidents</h3>
+                    <table id="dashboard-recent">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Title</th>
+                                <th>Dept</th>
+                                <th>Date</th>
+                                <th>Severity</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- --------------- AUDIT SECTION (your original content) ---------------- -->
+            <div id="audit-section">
+                <div class="header">
+                    <div class="breadcrumb" id="breadcrumb">Home / Audit Management / Audit Plan</div>
+                    <div class="flex items-center gap-3">
+                        {% if current_user.is_authenticated %}
+                        <div class="text-sm">{{ current_user.full_name }}</div>
+                        <div
+                            class="w-10 h-10 rounded-xl bg-[#E10600] text-white flex items-center justify-center font-bold">
+                            {{ current_user.full_name.split(' ')[0][0] ~ (current_user.full_name.split(' ')[1][0] if
+                            current_user.full_name.split(' ')|length > 1 else '') }}
+                        </div>
+                        <a href="{{ url_for('auth.logout') }}"
+                            class="ml-2 px-3 py-1 rounded bg-red-500 text-white text-sm hover:bg-red-600 transition">
+                            Logout
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('auth.login') }}"
+                            class="px-4 py-1.5 rounded bg-[#E10600] text-white text-sm hover:brightness-110 transition">
+                            Login
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <h1 class="page-title" id="pageTitle">Audit Plan</h1>
+
+                <!-- Tabs for navigation -->
+                <div class="tabs">
+                    <div class="tab active" data-tab="audit-plan">Audit Plan</div>
+                    <div class="tab" data-tab="new-audit">New Audit</div>
+                    <div class="tab" data-tab="audit-details">Audit Details</div>
+                </div>
+
+                <!-- === Audit Plan Tab === -->
+                <div class="tab-content active" id="audit-plan">
+                    <div class="form-container">
+                        <div class="form-header">
+                            <h3>Audit Plan</h3>
+                            <button class="btn btn-primary" id="send-approval">
+                                <i class="fas fa-paper-plane"></i> Send for Approval
+                            </button>
+                        </div>
+
+                        <div class="form-section">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="plan-standard">Standard</label>
+                                    <select id="plan-standard">
+                                        <option value="">ISO 0025</option>
+                                        <option value="iso9001">ISO 9001: Quality Management</option>
+                                        <option value="iso14001">ISO 14001: Environmental Management</option>
+                                        <option value="iso45001">ISO 45001: Occupational Health & Safety</option>
+                                        <option value="iso27001">ISO 27001: Information Security</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="plan-date">Plan Date</label>
+                                    <input type="date" id="plan-date">
+                                </div>
+                                <div class="form-group" style="align-self: flex-end;">
+                                    <button class="btn btn-success" id="save-plan">
+                                        <i class="fas fa-save"></i> Save
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <h3>Annual Audit Schedule</h3>
+                            <div class="table-wrapper">
+                                <table id="audit-plan-table">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Organization</th>
+                                            <th>Jan</th>
+                                            <th>Feb</th>
+                                            <th>Mar</th>
+                                            <th>Apr</th>
+                                            <th>May</th>
+                                            <th>Jun</th>
+                                            <th>Jul</th>
+                                            <th>Aug</th>
+                                            <th>Sep</th>
+                                            <th>Oct</th>
+                                            <th>Nov</th>
+                                            <th>Dec</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- your rows (kept intact) -->
+                                        <tr>
+                                            <td>1</td>
+                                            <td>Administration</td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                        </tr>
+                                        <!-- rest of original table rows -->
+                                        <tr>
+                                            <td>2</td>
+                                            <td>Production</td>
+                                            <td></td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td>3</td>
+                                            <td>Quality Control</td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td>4</td>
+                                            <td>Human Resources</td>
+                                            <td></td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td>5</td>
+                                            <td>Finance</td>
+                                            <td></td>
+                                            <td></td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>6</td>
+                                            <td>IT Department</td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                            <td></td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                            <td><i class="fas fa-user-check planned-audit" title="Audit Planned"></i>
+                                            </td>
+                                            <td></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- === New Audit Tab === -->
+                <div class="tab-content" id="new-audit">
+                    <div class="form-container">
+                        <div class="form-section">
+                            <h3>Audit Scheduling</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="organization" class="required">Organization</label>
+                                    <select id="organization">
+                                        <option value="">Select Organization</option>
+                                        <option value="org1">Organization 1</option>
+                                        <option value="org2">Organization 2</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="audit-type" class="required">Audit Type</label>
+                                    <select id="audit-type">
+                                        <option value="">Select Audit Type</option>
+                                        <option value="internal">Internal Audit</option>
+                                        <option value="external">External Audit</option>
+                                        <option value="supplier">Supplier Audit</option>
+                                        <option value="surveillance">Surveillance Audit</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="audit-standard" class="required">Audit Standard</label>
+                                    <select id="audit-standard">
+                                        <option value="">Select Audit Standard</option>
+                                        <option value="iso9001">ISO 9001</option>
+                                        <option value="iso14001">ISO 14001</option>
+                                        <option value="ohsas18001">OHSAS 18001</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="scope" class="required">Scope of the audit</label>
+                                <textarea id="scope" rows="3" placeholder="Enter scope of the audit"></textarea>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="audit-date" class="required">Audit Planned Date</label>
+                                    <input type="date" id="audit-date">
+                                </div>
+                                <div class="form-group">
+                                    <label for="audit-time" class="required">Audit Time</label>
+                                    <input type="time" id="audit-time">
+                                </div>
+                                <div class="form-group">
+                                    <label for="duration" class="required">Duration of Audit (Hours)</label>
+                                    <select id="duration">
+                                        <option value="">Select Duration</option>
+                                        <option value="1">1 hour</option>
+                                        <option value="2">2 hours</option>
+                                        <option value="4">4 hours</option>
+                                        <option value="8">8 hours</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="auditor" class="required">Auditor</label>
+                                    <select id="auditor">
+                                        <option value="">Select Auditor</option>
+                                        <option value="auditor1">Auditor 1</option>
+                                        <option value="auditor2">Auditor 2</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="lead-auditor" class="required">Lead Auditor</label>
+                                    <select id="lead-auditor">
+                                        <option value="">Select Lead Auditor</option>
+                                        <option value="lead1">Lead Auditor 1</option>
+                                        <option value="lead2">Lead Auditor 2</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="auditee" class="required">Auditee</label>
+                                    <select id="auditee">
+                                        <option value="">Select Auditee</option>
+                                        <option value="auditee1">Auditee 1</option>
+                                        <option value="auditee2">Auditee 2</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="shift" class="required">Shift</label>
+                                <div class="shift-options">
+                                    <input type="radio" id="day-shift" name="shift" value="day" checked><label
+                                        for="day-shift">Day</label>
+                                    <input type="radio" id="night-shift" name="shift" value="night"><label
+                                        for="night-shift">Night</label>
+                                    <input type="radio" id="both-shift" name="shift" value="both"><label
+                                        for="both-shift">Both</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <button class="btn btn-primary" id="save-audit">Save Audit</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- === Audit Details Tab === -->
+                <div class="tab-content" id="audit-details">
+                    <div class="form-container conduct-audit-header">
+                        <h3>Conduct Audit</h3>
+                        <p class="conduct-audit-info"><strong>Conducting HSE, Manager, AA - Conducted as
+                                HO-100%</strong></p>
+                    </div>
+
+                    <div class="form-container">
+                        <div class="form-section">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="conducted-date" class="required">Audit Conducted Date</label>
+                                    <input type="date" id="conducted-date">
+                                </div>
+                                <div class="form-group">
+                                    <label for="report-date" class="required">Audit Report Submitted Date</label>
+                                    <input type="text" id="report-date" value="ID0002054" readonly>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="audit-summary" class="required">Audit Summary</label>
+                                    <textarea id="audit-summary" rows="4" placeholder="Enter audit summary"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="references" class="required">Provides Referenda</label>
+                                    <textarea id="references" rows="4" placeholder="Enter references"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button class="btn btn-primary" id="update-audit"><i class="fas fa-sync-alt"></i>
+                                Update</button>
+                        </div>
+                    </div>
+
+                    <!-- Observations / Non-conformance / Document attachments kept intact -->
+                    <div class="table-container">
+                        <div class="table-header">
+                            <h3>Observation</h3>
+                            <div class="table-actions">
+                                <div class="search-box">
+                                    <input type="text" placeholder="Search observations..." class="search-input"><i
+                                        class="fas fa-search"></i>
+                                </div>
+                                <button class="btn btn-success"><i class="fas fa-plus"></i> Add</button>
+                            </div>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>S.No.</th>
+                                    <th>Record No.</th>
+                                    <th>Observation Type</th>
+                                    <th>NO Reference No.</th>
+                                    <th>Observation Type</th>
+                                    <th>Document Reference</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="7" class="no-data">No Data Available</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="table-container">
+                        <div class="table-header">
+                            <h3>Non-Conformance Details</h3>
+                            <div class="table-actions">
+                                <div class="search-box"><input type="text" placeholder="Search non-conformances..."
+                                        class="search-input"><i class="fas fa-search"></i></div>
+                                <button class="btn btn-success"><i class="fas fa-plus"></i> Add</button>
+                            </div>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>S.No.</th>
+                                    <th>Receivable</th>
+                                    <th>Non-Conformance Details</th>
+                                    <th>Closed Requirement</th>
+                                    <th>Person Responsible</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td>101+20</td>
+                                    <td>2014</td>
+                                    <td>AAA</td>
+                                    <td>Vending</td>
+                                    <td><span class="status-badge status-open">Open</span></td>
+                                    <td><button class="btn btn-primary">Edit</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="table-container">
+                        <div class="table-header">
+                            <h3>Document Attachment</h3>
+                            <div class="table-actions">
+                                <div class="search-box"><input type="text" placeholder="Search documents..."
+                                        class="search-input"><i class="fas fa-search"></i></div>
+                                <button class="btn btn-success"><i class="fas fa-upload"></i> Upload</button>
+                            </div>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>S.No.</th>
+                                    <th>File Name</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="3" class="no-data">No Data Available</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="form-container">
+                        <div class="verification-section">
+                            <h3>Verification & Closure</h3>
+                            <p class="verification-info"><strong>Verified & Closed by: Vimalraj - Verified & Closed on:
+                                    20/Jul/2024</strong></p>
+                            <h4 class="comments-heading">Comments</h4>
+                            <div class="comments-table">
+                                <table>
+                                    <tr>
+                                        <td class="label-cell"><strong>Approved By</strong></td>
+                                        <td class="value-cell">Vimalraj</td>
+                                        <td class="label-cell"><strong>Date of Approval</strong></td>
+                                        <td class="value-cell">20-Jul-2024</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="label-cell"><strong>Comment</strong></td>
+                                        <td class="value-cell" colspan="3">getigdaf</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <div class="table-header">
+                            <h3>Document List</h3>
+                            <div class="document-actions"><button class="btn btn-danger"><i class="fas fa-times"></i>
+                                    Close</button></div>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>File Name</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="2" class="no-data">No Data Available</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="footer">Martian QHSE System © COPYRIGHT 2026</div>
+                </div>
+            </div>
+
+            <!-- --------------- INCIDENT MANAGEMENT SECTION (integrated + expanded) ---------------- -->
+            <div id="incident-section" class="hidden">
+                <div class="header">
+                    <div class="breadcrumb">Home / Incident Management</div>
+                    <div class="user-info"><span>John Doe</span>
+                        <div class="avatar">JD</div>
+                    </div>
+                </div>
+
+                <h1 class="page-title">Incident Management</h1>
+
+                <!-- Incident section tabs -->
+                <div class="tabs">
+                    <div class="tab active" data-tab="incident-dashboard">Dashboard</div>
+                    <div class="tab" data-tab="all-incidents">All Incidents</div>
+                    <div class="tab" data-tab="new-incident">New Incident</div>
+                    <div class="tab" data-tab="incident-details">Incident Details</div>
+                    <div class="tab" data-tab="capas">CAPA</div>
+                    <div class="tab" data-tab="document-management">Document Management</div>
+                    <div class="tab" data-tab="trainings-briefings">Trainings & Briefings</div>
+                </div>
+
+                <!-- Incident Dashboard -->
+                <div class="tab-content active" id="incident-dashboard">
+                    <div class="dashboard-cards">
+                        <div class="card">
+                            <h3>42</h3>
+                            <p>Reported Incidents</p>
+                        </div>
+                        <div class="card">
+                            <h3>37</h3>
+                            <p>Open Incidents</p>
+                        </div>
+                        <div class="card">
+                            <h3>5</h3>
+                            <p>Closed Incidents</p>
+                        </div>
+                        <div class="card">
+                            <h3>23</h3>
+                            <p>Valid Incidents</p>
+                        </div>
+                        <div class="card">
+                            <h3>23</h3>
+                            <p>Actions</p>
+                        </div>
+                        <div class="card">
+                            <h3>13</h3>
+                            <p>Open Investigations</p>
+                        </div>
+                        <div class="card">
+                            <h3>10</h3>
+                            <p>Investigations Closed</p>
+                        </div>
+                    </div>
+
+                    <div class="charts-section">
+                        <div class="chart-card">
+                            <h4>Incidents by Month</h4>
+                            <canvas id="incident-bar-chart"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <h4>CAPA Status Overview</h4>
+                            <canvas id="capa-pie-overview"></canvas>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- All Incidents -->
+                <div class="tab-content" id="all-incidents">
+                    <div class="module-header">
+                        <h3>All Incidents</h3>
+                        <div>
+                            <input type="text" placeholder="Search incidents..." id="incidentSearch"
+                                onkeyup="filterIncidents()" class="small">
+                            <button class="btn btn-primary"
+                                onclick="document.querySelector('[data-tab=\'new-incident\']').click()">Report
+                                Incident</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Title</th>
+                                    <th>Department</th>
+                                    <th>Date</th>
+                                    <th>Severity</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="incident-table-body">
+                                <!-- seeded rows populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- New Incident (reporting form) -->
+                <div class="tab-content" id="new-incident">
+                    <div class="form-container">
+                        <h3>Report New Incident</h3>
+                        <form id="newIncidentForm" onsubmit="event.preventDefault();">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="incident-title">Incident Title</label>
+                                    <input type="text" id="incident-title" placeholder="e.g., Fuel spill near pump 3">
+                                </div>
+                                <div class="form-group">
+                                    <label for="incident-department">Department</label>
+                                    <select id="incident-department">
+                                        <option value="">Select Department</option>
+                                        <option value="Administration">Administration</option>
+                                        <option value="Production">Production</option>
+                                        <option value="Quality Control">Quality Control</option>
+                                        <option value="Field Operations">Field Operations</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="incident-type">Incident Type</label>
+                                    <select id="incident-type">
+                                        <option value="">Select Type</option>
+                                        <option value="near-miss">Near Miss</option>
+                                        <option value="spill">Spill</option>
+                                        <option value="injury">Injury</option>
+                                        <option value="fire">Fire</option>
+                                        <option value="property">Property Damage</option>
+                                        <option value="environmental">Environmental</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="incident-date">Date & Time</label>
+                                <input type="datetime-local" id="incident-datetime">
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="incident-severity">Severity</label>
+                                    <select id="incident-severity">
+                                        <option value="">Select Severity</option>
+                                        <option value="Low">Low</option>
+                                        <option value="Medium">Medium</option>
+                                        <option value="High">High</option>
+                                        <option value="Critical">Critical</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="incident-location">Location (text)</label>
+                                    <input type="text" id="incident-location"
+                                        placeholder="e.g., Pump station 2 / GPS coords">
+                                    <div class="note">Or click the geolocate button to auto-detect coordinates (browser
+                                        permission required).</div>
+                                    <button type="button" class="btn btn-small"
+                                        onclick="captureGeo()">Geolocate</button>
+                                    <div id="geo-result" class="small note"></div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="incident-description">Description</label>
+                                <textarea id="incident-description" rows="4"
+                                    placeholder="Describe what happened..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Assign Investigator</label>
+                                <select id="incident-investigator">
+                                    <option value="">Unassigned</option>
+                                    <option value="HSE Officer">HSE Officer</option>
+                                    <option value="Supervisor">Supervisor</option>
+                                    <option value="External Auditor">External Auditor</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Upload Evidence (photos, documents, videos)</label>
+                                <input type="file" id="incident-files" multiple
+                                    accept="image/*,video/*,.pdf,.doc,.docx">
+                                <div id="file-list" class="file-list small"></div>
+                            </div>
+
+                            <div class="form-group inline-row">
+                                <label class="small">Security / Privacy</label>
+                                <div class="note">Data is stored locally in this demo. In production you must encrypt
+                                    data in transit & at rest and implement RBAC and audit logs.</div>
+                            </div>
+
+                            <div class="form-group">
+                                <button class="btn btn-success" onclick="submitIncident()">Submit Incident</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Incident Details -->
+                <div class="tab-content" id="incident-details">
+                    <div class="form-container">
+                        <h3>Incident Details</h3>
+                        <div class="form-row">
+                            <div class="form-group"><label>ID</label><input type="text" id="detail-id" readonly></div>
+                            <div class="form-group"><label>Title</label><input type="text" id="detail-title" readonly>
+                            </div>
+                            <div class="form-group"><label>Department</label><input type="text" id="detail-department"
+                                    readonly></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Type</label><input type="text" id="detail-type" readonly>
+                            </div>
+                            <div class="form-group"><label>Date</label><input type="text" id="detail-date" readonly>
+                            </div>
+                            <div class="form-group"><label>Severity</label><input type="text" id="detail-severity"
+                                    readonly></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="detail-description" rows="4" readonly></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Investigator</label><input type="text"
+                                    id="detail-investigator" readonly></div>
+                            <div class="form-group"><label>Location</label><input type="text" id="detail-location"
+                                    readonly></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Investigation Log / Root Cause</label>
+                            <textarea id="detail-rca" rows="4" placeholder="Add investigation notes"></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Status</label>
+                                <select id="detail-status">
+                                    <option value="Reported">Reported</option>
+                                    <option value="Under Investigation">Under Investigation</option>
+                                    <option value="Resolved">Resolved</option>
+                                    <option value="Closed">Closed</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <button class="btn btn-primary" onclick="updateIncidentDetails()">Save Details</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CAPA (Corrective & Preventive Actions) -->
+                <div class="tab-content" id="capas">
+                    <div class="form-container">
+                        <h3>Corrective & Preventive Actions (CAPA)</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Related Incident ID (optional)</label>
+                                <input type="number" id="capa-incident-id" min="1">
+                            </div>
+                            <div class="form-group">
+                                <label>Action Description</label>
+                                <input type="text" id="capa-desc" placeholder="Describe action to be taken">
+                            </div>
+                            <div class="form-group">
+                                <label>Person Responsible</label>
+                                <input type="text" id="capa-owner" placeholder="Name or role">
+                            </div>
+                            <div class="form-group">
+                                <label>Due Date</label>
+                                <input type="date" id="capa-due">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <button class="btn btn-success" onclick="createCapa()">Create CAPA</button>
+                        </div>
+
+                        <div class="table-container">
+                            <h4>CAPA List</h4>
+                            <table class="capas-table" id="capa-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Incident</th>
+                                        <th>Action</th>
+                                        <th>Owner</th>
+                                        <th>Due</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Document Management -->
+                <div class="tab-content" id="document-management">
+                    <div class="form-container">
+                        <h3>Document Management</h3>
+                        <p>Upload and manage safety policies, manuals, MSDS, and reports.</p>
+                        <form id="documentUploadForm">
+                            <div class="form-group">
+                                <label for="doc-title">Document Title</label>
+                                <input type="text" id="doc-title" placeholder="Enter title">
+                            </div>
+                            <div class="form-group">
+                                <label for="doc-file">Upload File</label>
+                                <input type="file" id="doc-file">
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="uploadDocument()">Upload</button>
+                        </form>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Title</th>
+                                    <th>File</th>
+                                    <th>Date Uploaded</th>
+                                </tr>
+                            </thead>
+                            <tbody id="documentTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Trainings & Briefings -->
+                <div class="tab-content" id="trainings-briefings">
+                    <div class="form-container">
+                        <h3>Trainings & Safety Briefings</h3>
+                        <p>Schedule and track safety trainings and briefings for staff.</p>
+                        <form id="trainingForm">
+                            <div class="form-group">
+                                <label for="training-title">Training Title</label>
+                                <input type="text" id="training-title" placeholder="Enter training or briefing title">
+                            </div>
+                            <div class="form-group">
+                                <label for="training-date">Date</label>
+                                <input type="date" id="training-date">
+                            </div>
+                            <div class="form-group">
+                                <label for="training-file">Upload Material</label>
+                                <input type="file" id="training-file">
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="addTraining()">Add Training</button>
+                        </form>
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Title</th>
+                                    <th>Date</th>
+                                    <th>Material</th>
+                                </tr>
+                            </thead>
+                            <tbody id="trainingTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+
+                <div class="footer">Martian QHSE System © COPYRIGHT 2026</div>
+            </div>
+
+            <!-- --------------- DOCUMENTS SECTION (Document Management) ---------------- -->
+            <div id="docs-section" class="hidden">
+                <div class="header">
+                    <div class="breadcrumb">Home / Document Management</div>
+                    <div class="user-info"><span>John Doe</span>
+                        <div class="avatar">JD</div>
+                    </div>
+                </div>
+                <h1 class="page-title">Document Management</h1>
+                <div class="form-container">
+                    <h3>Upload Document</h3>
+                    <div class="form-group">
+                        <input type="file" id="doc-upload" accept=".pdf,.doc,.docx,.xls,.xlsx">
+                    </div>
+                    <div class="form-group"><button class="btn btn-success" onclick="uploadDoc()">Upload</button></div>
+                    <div id="doc-list" class="table-container"></div>
+                </div>
+            </div>
+
+            <!-- --------------- TRAINING & BRIEFINGS (placeholder) ---------------- -->
+            <div id="training-section" class="hidden">
+                <div class="header">
+                    <div class="breadcrumb">Home / Training & Briefings</div>
+                    <div class="user-info"><span>John Doe</span>
+                        <div class="avatar">JD</div>
+                    </div>
+                </div>
+                <h1 class="page-title">Training & Safety Briefings</h1>
+                <div class="form-container">
+                    <h3>Schedule Training</h3>
+                    <div class="form-row">
+                        <div class="form-group"><label>Title</label><input type="text" id="training-title"></div>
+                        <div class="form-group"><label>Date</label><input type="date" id="training-date"></div>
+                        <div class="form-group"><label>Upload Briefing</label><input type="file" id="training-file">
+                        </div>
+                    </div>
+                    <div class="form-group"><button class="btn btn-primary">Save Training</button></div>
+                </div>
+            </div>
+
+        </div> <!-- end main-content -->
+    </div> <!-- end container -->
+
+    <script>
+        /* ================= Sidebar navigation switching ================= */
+        document.querySelectorAll('.menu li').forEach(item => {
+            item.addEventListener('click', function () {
+                // Remove active from all
+                document.querySelectorAll('.menu li').forEach(li => li.classList.remove('active'));
+                // Add active to clicked
+                this.classList.add('active');
+                // Optional: load content based on data-section
+                const section = this.getAttribute('data-section');
+                // show/hide sections...
+            });
+        });
+
+
+        const menuItems = document.querySelectorAll('.menu li[data-section]');
+        function setActiveMenu(item) {
+            menuItems.forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+        }
+        menuItems.forEach(item => {
+            item.addEventListener('click', () => {
+                setActiveMenu(item);
+                const target = item.getAttribute('data-section');
+                // Hide all sections
+                document.querySelectorAll('#dashboard-section, #audit-section, #incident-section, #training-section, #docs-section').forEach(s => s.classList.add('hidden'));
+                // Show target
+                document.getElementById(target).classList.remove('hidden');
+
+                // Update breadcrumb/title if needed
+                const crumbs = {
+                    'dashboard-section': 'Home / Dashboard',
+                    'audit-section': 'Home / Audit Management / Audit Plan',
+                    'incident-section': 'Home / Incident Management',
+                    'training-section': 'Home / Training & Briefings',
+                    'docs-section': 'Home / Document Management'
+                };
+                const bc = document.querySelector('#breadcrumb') || document.querySelector('.breadcrumb');
+                if (bc) bc.textContent = crumbs[target] || 'Home';
+            });
+        });
+
+        /* ================= Tab switching for audit & incident tabs ================= */
+        function setupTabs(rootSelector) {
+            const root = document.querySelector(rootSelector);
+            if (!root) return;
+            const tabs = root.querySelectorAll('.tab');
+            const contents = root.querySelectorAll('.tab-content');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    const target = tab.dataset.tab;
+                    contents.forEach(c => c.classList.remove('active'));
+                    const el = root.querySelector('#' + target);
+                    if (el) el.classList.add('active');
+                });
+            });
+        }
+        // initialize tabs for audit (root is document) and incident (incident-section)
+        setupTabs('.main-content'); // generic - will bind to all matching tabs
+        setupTabs('#incident-section');
+
+        /* ================= Unified Incident Management System ================= */
+
+        // Combined storage (keeps original demo incidents + new cost fields)
+        let incidentData = {
+            1: { id: 1, title: 'Near Miss Admin', department: 'Administration', type: 'Near Miss', date: '2025-10-08', severity: 'Low', status: 'Open', investigator: 'HSE Officer', location: 'Admin Office', description: 'Minor near miss in admin office.', employees: 0, hoursLost: 0, costPerHour: 0, totalCost: 0, files: [] },
+            2: { id: 2, title: 'Equipment Failure', department: 'Production', type: 'Incident', date: '2025-10-05', severity: 'High', status: 'In Progress', investigator: 'Supervisor', location: 'Pump 4', description: 'Pump failure in production area.', employees: 0, hoursLost: 0, costPerHour: 0, totalCost: 0, files: [] },
+            3: { id: 3, title: 'QC Issue', department: 'Quality Control', type: 'Incident', date: '2025-10-01', severity: 'Medium', status: 'Closed', investigator: 'Lead Auditor', location: 'QC Lab', description: 'Quality control failure detected.', employees: 0, hoursLost: 0, costPerHour: 0, totalCost: 0, files: [] }
+        };
+
+        /* ================= Table & Dashboard Refresh ================= */
+
+        function refreshIncidentTable() {
+            const tbody = document.getElementById('incident-table-body');
+            tbody.innerHTML = '';
+
+            Object.values(incidentData)
+                .sort((a, b) => a.id - b.id)
+                .forEach(it => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                <td>${it.id}</td>
+                <td>${escapeHtml(it.title)}</td>
+                <td>${escapeHtml(it.department)}</td>
+                <td>${it.date}</td>
+                <td>${it.severity || ''}</td>
+                <td><span class="status-badge ${it.status === 'Closed' ? 'status-closed' : (it.status === 'In Progress' ? 'status-in-progress' : 'status-open')}">${it.status}</span></td>
+                <td>
+                    <button class="btn btn-primary btn-small" onclick="viewIncident(${it.id})">View</button>
+                    ${it.status !== 'Closed' ? `<button class="btn btn-success btn-small" onclick="closeIncident(${it.id})">Close</button>` : ''}
+                </td>`;
+                    tbody.appendChild(tr);
+                });
+
+            refreshDashboardKPIs();
+        }
+
+        function refreshDashboardKPIs() {
+            const vals = Object.values(incidentData);
+            document.getElementById('kpi-open').textContent = vals.filter(v => v.status === 'Open').length;
+            document.getElementById('kpi-inprogress').textContent = vals.filter(v => v.status === 'In Progress').length;
+            document.getElementById('kpi-closed').textContent = vals.filter(v => v.status === 'Closed').length;
+        }
+
+        /* ================= Search Filter ================= */
+
+        function filterIncidents() {
+            const input = document.getElementById('incidentSearch').value.toLowerCase();
+            document.querySelectorAll('#incident-table-body tr').forEach(row => {
+                row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none';
+            });
+        }
+
+        /* ================= View Incident ================= */
+
+        function viewIncident(id) {
+            const data = incidentData[id];
+            if (!data) return alert('Incident not found');
+
+            document.getElementById('detail-id').value = data.id;
+            document.getElementById('detail-title').value = data.title;
+            document.getElementById('detail-department').value = data.department;
+            document.getElementById('detail-type').value = data.type;
+            document.getElementById('detail-date').value = data.date;
+            document.getElementById('detail-severity').value = data.severity;
+            document.getElementById('detail-description').value = data.description;
+            document.getElementById('detail-investigator').value = data.investigator || '';
+            document.getElementById('detail-location').value = data.location || '';
+        }
+
+        /* ================= Close Incident ================= */
+
+        function closeIncident(id) {
+            if (!confirm('Mark this incident as Closed?')) return;
+            incidentData[id].status = 'Closed';
+            refreshIncidentTable();
+        }
+
+        /* ================= UNIFIED SUBMIT FUNCTION ================= */
+
+        function submitIncident() {
+            const title = document.getElementById("incident-title").value.trim();
+            const department = document.getElementById("incident-department").value;
+            const type = document.getElementById("incident-type").value;
+            const date = document.getElementById("incident-date").value;
+            const severity = document.getElementById("incident-severity").value;
+            const location = document.getElementById("incident-location").value.trim();
+            const description = document.getElementById("incident-description").value.trim();
+            const investigator = document.getElementById("incident-investigator").value;
+
+            // New cost fields
+            const employees = parseInt(document.getElementById("incident-employees").value) || 0;
+            const hoursPerEmployee = parseFloat(document.getElementById("incident-hours-per-employee").value) || 0;
+            const costPerHour = parseFloat(document.getElementById("incident-cost-per-hour").value) || 0;
+
+            const hoursLost = employees * hoursPerEmployee;
+            const totalCost = hoursLost * costPerHour;
+
+            const filesEl = document.getElementById('incident-files');
+            const files = [];
+            if (filesEl?.files) {
+                for (let f of filesEl.files)
+                    files.push({ name: f.name, size: f.size, type: f.type });
+            }
+
+            if (!title || !department || !type || !date) {
+                alert('Please fill required fields: Title, Department, Type, Date');
+                return;
+            }
+
+            const newId = Math.max(...Object.keys(incidentData).map(Number)) + 1;
+
+            incidentData[newId] = {
+                id: newId,
+                title,
+                department,
+                type,
+                date,
+                severity,
+                location,
+                description,
+                investigator,
+                employees,
+                hoursLost,
+                costPerHour,
+                totalCost,
+                files,
+                status: "Open"
+            };
+
+            document.getElementById('newIncidentForm').reset();
+            document.getElementById('file-list').innerHTML = "";
+
+            refreshIncidentTable();
+            alert("Incident submitted!");
+        }
+
+        /* ================= File Upload Preview ================= */
+
+        document.getElementById('incident-files')?.addEventListener('change', function () {
+            const list = document.getElementById('file-list');
+            list.innerHTML = '';
+            for (let f of this.files) {
+                const div = document.createElement('div');
+                div.textContent = `${f.name} (${Math.round(f.size / 1024)} KB)`;
+                list.appendChild(div);
+            }
+        });
+
+
+        /* -------------- Geo location capture -------------- */
+        function captureGeo() {
+            const out = document.getElementById('geo-result');
+            if (!navigator.geolocation) {
+                out.textContent = 'Geolocation not supported by browser.';
+                return;
+            }
+            out.textContent = 'Requesting location...';
+            navigator.geolocation.getCurrentPosition(pos => {
+                const coords = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
+                document.getElementById('incident-location').value = coords;
+                out.textContent = 'Captured: ' + coords;
+            }, err => {
+                out.textContent = 'Unable to get location: ' + err.message;
+            }, { enableHighAccuracy: true, timeout: 10000 });
+        }
+
+        /* -------------- Incident details update -------------- */
+        function updateIncidentDetails() {
+            const id = +document.getElementById('detail-id').value;
+            if (!id || !incidentData[id]) return alert('No incident selected.');
+            incidentData[id].status = document.getElementById('detail-status').value;
+            incidentData[id].desc = document.getElementById('detail-description').value;
+            incidentData[id].investigator = document.getElementById('detail-investigator').value;
+            incidentData[id].location = document.getElementById('detail-location').value;
+            // append rca notes (demo will just keep latest)
+            incidentData[id].rca = document.getElementById('detail-rca').value;
+            alert('Incident updated.');
+            refreshIncidentTable();
+        }
+
+
+        /* -------------- Document management (client-side list) -------------- */
+        const docs = [];
+        function uploadDoc() {
+            const f = document.getElementById('doc-upload');
+            if (!f.files.length) return alert('Choose a file to upload');
+            const file = f.files[0];
+            docs.push({ name: file.name, size: file.size, uploadedAt: new Date().toISOString() });
+            renderDocs();
+            f.value = '';
+        }
+
+        function renderDocs() {
+            const el = document.getElementById('doc-list');
+            el.innerHTML = '<h4>Documents</h4>';
+            const table = document.createElement('table');
+            table.innerHTML = `<thead><tr><th>File</th><th>Uploaded</th></tr></thead>`;
+            const tbody = document.createElement('tbody');
+            docs.forEach(d => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${escapeHtml(d.name)}</td><td>${(new Date(d.uploadedAt)).toLocaleString()}</td>`;
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            el.appendChild(table);
+        }
+
+        /* -------------- Utilities -------------- */
+        function escapeHtml(s) { if (!s && s !== 0) return ''; return s.toString().replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
+
+        function exportIncidents() {
+            const vals = Object.values(incidentData);
+            if (!vals.length) return alert('No incidents to export.');
+            const rows = [['ID', 'Title', 'Dept', 'Date', 'Type', 'Severity', 'Status', 'Investigator', 'Location', 'Description']];
+            vals.forEach(it => rows.push([it.id, it.title, it.dept, it.date, it.type, it.severity, it.status, it.investigator || '', it.location || '', it.desc || '']));
+            const csv = rows.map(r => r.map(c => `"${(c + '').replace(/"/g, '""')}"`).join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'incidents_export.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        /* Initialize data on load */
+        refreshIncidentTable();
+        renderCapas();
+        renderDocs();
+        refreshDashboardKPIs();
+
+    </script>
+
+</body>
+
+</html>
+{% endblock %}

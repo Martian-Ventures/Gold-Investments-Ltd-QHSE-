@@ -1,0 +1,14 @@
+Flask>=2.2
+Flask-Login
+Flask-Migrate
+Flask-WTF
+psycopg2-binary
+SQLAlchemy
+python-dotenv
+Werkzeug
+Flask-Mail
+Flask-SQLAlchemy
+Flask-Cors
+Flask-RESTful  
+itsdangerous
+pyotp

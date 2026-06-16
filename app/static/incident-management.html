@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incident Management - QHSE System</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Extra styles for Incident Management */
+        .status-badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: white;
+        }
+        .status-open { background-color: #ef4444; }
+        .status-in-progress { background-color: #f97316; }
+        .status-closed { background-color: #22c55e; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab { cursor: pointer; padding: 8px 16px; border-bottom: 2px solid transparent; display: inline-block; }
+        .tab.active { border-bottom: 2px solid #3b82f6; font-weight: bold; }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">
+            <h1>QHSE System</h1>
+        </div>
+        <ul class="menu">
+            <li><a href="audit.html">Audit Management</a></li>
+            <li class="active">Incident Management</li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="header">
+            <div class="breadcrumb" id="breadcrumb">Home / Incident Management</div>
+            <div class="user-info">
+                <span>John Doe</span>
+                <div class="avatar">JD</div>
+            </div>
+        </div>
+
+        <h1 class="page-title" id="pageTitle">Incident Management</h1>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <div class="tab active" data-tab="incident-dashboard">Dashboard</div>
+            <div class="tab" data-tab="all-incidents">All Incidents</div>
+            <div class="tab" data-tab="new-incident">New Incident</div>
+            <div class="tab" data-tab="incident-details">Incident Details</div>
+            <div class="tab" data-tab="document-management">Document Management</div>
+            <div class="tab" data-tab="trainings-briefings">Trainings & Briefings</div>
+        </div>
+
+        <!-- All Incidents Tab -->
+        <div class="tab-content active" id="all-incidents">
+            <div class="table-container">
+                <h3>All Incidents</h3>
+                <div class="table-actions">
+                    <input type="text" placeholder="Search incidents..." id="incidentSearch" onkeyup="filterIncidents()">
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Department</th>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="incident-table-body">
+                        <tr>
+                            <td>1</td>
+                            <td>Administration</td>
+                            <td>08-Oct-2025</td>
+                            <td>Near Miss</td>
+                            <td><span class="status-badge status-open">Open</span></td>
+                            <td>
+                                <button class="btn btn-primary btn-small" onclick="viewIncident(1)">View</button>
+                                <button class="btn btn-success btn-small" onclick="closeIncident(this)">Close</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>Production</td>
+                            <td>05-Oct-2025</td>
+                            <td>Incident</td>
+                            <td><span class="status-badge status-in-progress">In Progress</span></td>
+                            <td>
+                                <button class="btn btn-primary btn-small" onclick="viewIncident(2)">View</button>
+                                <button class="btn btn-success btn-small" onclick="closeIncident(this)">Close</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>Quality Control</td>
+                            <td>01-Oct-2025</td>
+                            <td>Incident</td>
+                            <td><span class="status-badge status-closed">Closed</span></td>
+                            <td>
+                                <button class="btn btn-primary btn-small" onclick="viewIncident(3)">View</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- New Incident Tab -->
+        <div class="tab-content" id="new-incident">
+            <div class="form-container">
+                <h3>Report New Incident</h3>
+                <form id="newIncidentForm">
+                    <div class="form-group">
+                        <label for="incident-title">Incident Title</label>
+                        <input type="text" id="incident-title" placeholder="Enter incident title">
+                    </div>
+                    <div class="form-group">
+                        <label for="incident-department">Department</label>
+                        <select id="incident-department">
+                            <option value="">Select Department</option>
+                            <option value="admin">Administration</option>
+                            <option value="prod">Production</option>
+                            <option value="qc">Quality Control</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="incident-type">Incident Type</label>
+                        <select id="incident-type">
+                            <option value="">Select Type</option>
+                            <option value="near-miss">Near Miss</option>
+                            <option value="incident">Incident</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="incident-date">Date</label>
+                        <input type="date" id="incident-date">
+                    </div>
+                    <div class="form-group">
+                        <label for="incident-description">Description</label>
+                        <textarea id="incident-description" rows="4" placeholder="Describe the incident"></textarea>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="submitIncident()">Submit Incident</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Incident Details Tab -->
+        <div class="tab-content" id="incident-details">
+            <div class="form-container">
+                <h3>Incident Details</h3>
+                <div class="form-group">
+                    <label>ID</label>
+                    <input type="text" id="detail-id" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="detail-title" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Department</label>
+                    <input type="text" id="detail-department" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Type</label>
+                    <input type="text" id="detail-type" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="text" id="detail-date" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="detail-description" rows="4" readonly></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Tab switching
+    const tabs = document.querySelectorAll('.tab');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            const target = tab.dataset.tab;
+            contents.forEach(c => c.classList.remove('active'));
+            document.getElementById(target).classList.add('active');
+        });
+    });
+
+    // Filter incidents
+    function filterIncidents() {
+        const input = document.getElementById('incidentSearch').value.toLowerCase();
+        const rows = document.querySelectorAll('#incident-table-body tr');
+        rows.forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none';
+        });
+    }
+
+    // View Incident Details
+    const incidentData = {
+        1: {id:1, title:'Near Miss Admin', dept:'Administration', type:'Near Miss', date:'08-Oct-2025', desc:'Minor near miss in admin office.'},
+        2: {id:2, title:'Equipment Failure', dept:'Production', type:'Incident', date:'05-Oct-2025', desc:'Pump failure in production area.'},
+        3: {id:3, title:'QC Issue', dept:'Quality Control', type:'Incident', date:'01-Oct-2025', desc:'Quality control failure detected.'}
+    };
+
+    function viewIncident(id) {
+        const data = incidentData[id];
+        document.getElementById('detail-id').value = data.id;
+        document.getElementById('detail-title').value = data.title;
+        document.getElementById('detail-department').value = data.dept;
+        document.getElementById('detail-type').value = data.type;
+        document.getElementById('detail-date').value = data.date;
+        document.getElementById('detail-description').value = data.desc;
+        // Switch to Incident Details tab
+        tabs.forEach(t => t.classList.remove('active'));
+        contents.forEach(c => c.classList.remove('active'));
+        document.querySelector('[data-tab="incident-details"]').classList.add('active');
+        document.getElementById('incident-details').classList.add('active');
+    }
+
+    // Close Incident
+    function closeIncident(button) {
+        const row = button.closest('tr');
+        const statusCell = row.querySelector('.status-badge');
+        statusCell.textContent = 'Closed';
+        statusCell.className = 'status-badge status-closed';
+        button.remove();
+    }
+
+    // Submit new incident (adds to table)
+    function submitIncident() {
+        const title = document.getElementById('incident-title').value;
+        const dept = document.getElementById('incident-department').value;
+        const type = document.getElementById('incident-type').value;
+        const date = document.getElementById('incident-date').value;
+        const desc = document.getElementById('incident-description').value;
+
+        if (!title || !dept || !type || !date) { alert('Please fill all required fields'); return; }
+
+        const tbody = document.getElementById('incident-table-body');
+        const newId = tbody.rows.length + 1;
+
+        const newRow = tbody.insertRow();
+        newRow.innerHTML = `
+            <td>${newId}</td>
+            <td>${dept}</td>
+            <td>${date}</td>
+            <td>${type}</td>
+            <td><span class="status-badge status-open">Open</span></td>
+            <td>
+                <button class="btn btn-primary btn-small" onclick="viewIncident(${newId})">View</button>
+                <button class="btn btn-success btn-small" onclick="closeIncident(this)">Close</button>
+            </td>
+        `;
+        // Add to incidentData for details tab
+        incidentData[newId] = {id:newId, title, dept, type, date, desc};
+        alert('Incident submitted successfully!');
+        document.getElementById('newIncidentForm').reset();
+        // Switch to All Incidents tab
+        tabs.forEach(t => t.classList.remove('active'));
+        contents.forEach(c => c.classList.remove('active'));
+        document.querySelector('[data-tab="all-incidents"]').classList.add('active');
+        document.getElementById('all-incidents').classList.add('active');
+    }
+</script>
+</body>
+</html>

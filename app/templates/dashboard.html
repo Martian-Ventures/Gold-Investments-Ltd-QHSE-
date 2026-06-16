@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Dashboard</h2>
+<p>Welcome, {{ user.full_name }} ({{ user.role }})</p>
+
+<!-- Example: role-based link -->
+{% if user.role == 'Admin' %}
+<p><a href="{{ url_for('admin.manage_users') }}">Manage users</a></p>
+{% endif %}
+
+<!-- Link back to your web UI: e.g., the incident management page -->
+<p><a href="{{ url_for('main.index') }}">Open QHSE UI</a></p>
+
+<h1>Dashboard</h1>
+<div class="kpi">
+  <strong>{{ total }}</strong>
+  <div>Incidents</div>
+</div>
+<div class="kpi">
+  <strong>{{ open_count }}</strong>
+  <div>Open</div>
+</div>
+<div class="kpi">
+  <strong>{{ closed_count }}</strong>
+  <div>Closed</div>
+</div>
+
+<div class="table-container" style="margin-top:20px;">
+  <h3>Latest Incidents</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Title</th>
+        <th>Dept</th>
+        <th>Status</th>
+        <th>Created</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i in latest %}
+      <tr>
+        <td>{{ i.id }}</td>
+        <td>{{ i.title }}</td>
+        <td>{{ i.department }}</td>
+        <td>{{ i.status }}</td>
+        <td>{{ i.created_at.strftime("%d-%b-%Y") }}</td>
+        <td><a class="btn btn-primary" href="{{ url_for('incidents.view_incident', incident_id=i.id) }}">View</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
