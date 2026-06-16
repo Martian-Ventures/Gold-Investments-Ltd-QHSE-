@@ -1,0 +1,30 @@
+name: Deploy Flask App to Render
+
+on:
+  push:
+    branches:
+      - master # change if your default branch is master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Deploy to Render
+        run: |
+          curl -X POST https://api.render.com/deploy/srv-d5oan1q4d50c73c6bkug \
+            -H "Accept: application/json" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}"
