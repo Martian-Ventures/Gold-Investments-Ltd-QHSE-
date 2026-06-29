@@ -1,7 +1,10 @@
 [project]
 name = "gold-investments-ltd"
 version = "0.1.0"
-dependencies = []
+dependencies = [
+    "flask",
+    "flask-sqlalchemy"
+]
 
 [tool.vercel]
 entrypoint = "run:app"
