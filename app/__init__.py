@@ -67,8 +67,11 @@ def create_app(config_class=Config):
             return redirect(url_for('main.dashboard'))
         return redirect(url_for('auth.register'))
 
-    scheduler.init_app(app)
-    scheduler.start()
+    # Initialize scheduler — disabled on serverless environments (Vercel)
+    # APScheduler requires a persistent process; skip it if running serverless
+    if not os.getenv('VERCEL'):
+        scheduler.init_app(app)
+        scheduler.start()
 
     return app
 
