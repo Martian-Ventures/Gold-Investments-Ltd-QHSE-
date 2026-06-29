@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% block main_class %}relative z-10 min-h-screen w-full{% endblock %}
 {% block content %}
 <!DOCTYPE html>
 <html lang="en">
@@ -6,52 +7,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Incident Management - QHSE System</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Incident Management | Gold Circle Investments Ltd</title>
+    <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* Extra styles for Incident Management */
-
-        .status-badge {
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            color: white;
-        }
-
-        .status-open {
-            background-color: #ef4444;
-        }
-
-        .status-in-progress {
-            background-color: #f97316;
-        }
-
-        .status-closed {
-            background-color: #22c55e;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .tab {
-            cursor: pointer;
-            padding: 8px 16px;
-            border-bottom: 2px solid transparent;
-            display: inline-block;
-        }
-
-        .tab.active {
-            border-bottom: 2px solid #3b82f6;
-            font-weight: bold;
-        }
-    </style>
+    
 </head>
 
 <body>
@@ -61,56 +20,30 @@
         <div
             class="sidebar fixed inset-y-0 left-0 z-30 w-64 bg-white text-black flex flex-col shadow-xl overflow-hidden">
 
-            <!-- Logo / Brand header -->
-            <div class="p-6 flex flex-col items-center border-b border-white">
-                <!-- Yin-Yang logo using register-bg.jpg -->
-                <div class="mb-2 relative">
-                    <img src="/static/images/register-bg.jpg" alt="QHSE Logo"
-                        class="w-100 h-100 rounded-xl object-cover ring-2 ring-white shadow-2xl" />
-                    <!-- Optional subtle overlay/glow effect -->
-                    <div
-                        class="absolute inset-0 rounded-xl bg-gradient-to-b from-transparent via-transparent to-black/30 pointer-events-none">
-                    </div>
+            <div class="brand-header">
+                <div class="brand-mark" aria-hidden="true">
+                    <span class="brand-mark-inner">GCI</span>
                 </div>
-
-                <!-- Optional small brand text under logo 
-                <h2 class="text-lg font-semibold tracking-wide text-black text-center">
-                    QHSE Management System
-                </h2> -->
+                <p class="brand-name">Gold Circle<br>Investments Ltd</p>
             </div>
 
             <!-- Navigation -->
             <nav class="flex-1 px-3 pt-2 pb-5 overflow-y-auto">
                 <ul class="menu space-y-1.5">
                     <li data-section="dashboard-section" class="group">
-                        <a href="javascript:void(0)" class="block px-5 py-3 text-black 
-                                  group-hover:text-white group-hover:bg-gray-800/30 group-hover:rounded-lg 
-                                  group-[.active]:pl-5 group-[.active]:pr-0 group-[.active]:py-3.5 
-                                  group-[.active]:bg-red-600 group-[.active]:text-white 
-                                  group-[.active]:font-medium group-[.active]:rounded-l-full 
-                                  transition-colors">
+                        <a href="javascript:void(0)" class="nav-link">
                             Dashboard
                         </a>
                     </li>
 
                     <li data-section="audit-section" class="group">
-                        <a href="javascript:void(0)" class="block px-5 py-3 text-black 
-                                  group-hover:text-white group-hover:bg-gray-800/30 group-hover:rounded-lg 
-                                  group-[.active]:pl-5 group-[.active]:pr-0 group-[.active]:py-3.5 
-                                  group-[.active]:bg-red-600 group-[.active]:text-white 
-                                  group-[.active]:font-medium group-[.active]:rounded-l-full 
-                                  transition-colors">
+                        <a href="javascript:void(0)" class="nav-link">
                             Audit Management
                         </a>
                     </li>
 
                     <li data-section="incident-section" class="group">
-                        <a href="javascript:void(0)" class="block px-5 py-3 text-black 
-                                  group-hover:text-white group-hover:bg-gray-800/30 group-hover:rounded-lg 
-                                  group-[.active]:pl-5 group-[.active]:pr-0 group-[.active]:py-3.5 
-                                  group-[.active]:bg-red-600 group-[.active]:text-white 
-                                  group-[.active]:font-medium group-[.active]:rounded-l-full 
-                                  transition-colors">
+                        <a href="javascript:void(0)" class="nav-link">
                             Incident Management
                         </a>
                     </li>
@@ -118,7 +51,7 @@
                     <!-- Add all your other menu items in the same inactive style -->
                     <!-- Example:
                     <li data-section="training-section">
-                        <a href="javascript:void(0)" class="block px-5 py-3 text-black hover:text-white hover:bg-gray-800/30 rounded-lg transition-colors">
+                        <a href="javascript:void(0)" class="nav-link">
                             Training & Briefings
                         </a>
                     </li>
@@ -151,31 +84,31 @@
             </nav>
 
             <!-- Optional footer / version info -->
-            <div class="p-4 text-xs text-gray-600 border-t border-gray-800/60 text-center">
-                © 2026 • QHSE System
+            <div class="sidebar-footer">
+                © 2026 • Gold Circle QHSE
             </div>
         </div>
 
         <!-- Main Content -->
         <div
-            class="main-content flex-1 ml-64 bg-[url('/static/images/register-bg.jpg')] bg-cover bg-center bg-no-repeat min-h-screen">
+            class="main-content flex-1 ml-64 min-h-screen">
             <div class="header">
                 <div class="breadcrumb" id="breadcrumb">Home / Incident Management</div>
                 <div class="flex items-center gap-3">
                     {% if current_user.is_authenticated %}
                     <div class="text-sm">{{ current_user.full_name }}</div>
                     <div
-                        class="w-10 h-10 rounded-xl bg-[#E10600] text-white flex items-center justify-center font-bold">
+                        class="avatar-brand">
                         {{ current_user.full_name.split(' ')[0][0] ~ (current_user.full_name.split(' ')[1][0] if
                         current_user.full_name.split(' ')|length > 1 else '') }}
                     </div>
                     <a href="{{ url_for('auth.logout') }}"
-                        class="ml-2 px-3 py-1 rounded bg-red-500 text-white text-sm hover:bg-red-600 transition">
+                        class="btn-header-logout">
                         Logout
                     </a>
                     {% else %}
                     <a href="{{ url_for('auth.login') }}"
-                        class="px-4 py-1.5 rounded bg-[#E10600] text-white text-sm hover:brightness-110 transition">
+                        class="btn-header-login">
                         Login
                     </a>
                     {% endif %}

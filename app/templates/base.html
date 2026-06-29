@@ -4,10 +4,36 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{% block title %}Martian QHSE{% endblock %}</title>
+  <title>{% block title %}Gold Circle Investments Ltd{% endblock %}</title>
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            gold: '#F6B400',
+            'deep-gold': '#E59A00',
+            orange: '#F57C00',
+            'burnt-orange': '#EA5A0C',
+            'corporate-red': '#E10600',
+            'brand-green': '#34D400',
+            'brand-blue': '#2962FF',
+          },
+          fontFamily: {
+            heading: ['Poppins', 'system-ui', 'sans-serif'],
+            body: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          borderRadius: {
+            btn: '12px',
+            card: '18px',
+            dialog: '20px',
+          },
+        },
+      },
+    };
+  </script>
 
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -31,47 +57,21 @@
   });
 </script>
 
-<body class="min-h-screen relative overflow-hidden {% block body_class %}bg-slate-50{% endblock %}">
+<body class="min-h-screen relative overflow-hidden font-body {% block body_class %}bg-[#FAFAFA]{% endblock %}">
 
   {% block background %}{% endblock %}
 
-  {% block navbar %}
-  <!-- Topbar 
-  <header class="bg-white/90 backdrop-blur-md shadow py-2 px-4 flex items-center justify-between relative z-20">
-    <a href="{{ url_for('main.index') }}" class="text-lg font-bold text-[#E10600]">
-      Martian QHSE Management System
-    </a>
-
-    <div class="flex items-center gap-3">
-      {% if current_user.is_authenticated %}
-      <div class="text-sm">{{ current_user.full_name }}</div>
-      <div class="w-10 h-10 rounded-xl bg-[#E10600] text-white flex items-center justify-center font-bold">
-        {{ current_user.full_name.split(' ')[0][0] ~ (current_user.full_name.split(' ')[1][0] if
-        current_user.full_name.split(' ')|length > 1 else '') }}
-      </div>
-      <a href="{{ url_for('auth.logout') }}"
-        class="ml-2 px-3 py-1 rounded bg-red-500 text-white text-sm hover:bg-red-600 transition">
-        Logout
-      </a>
-      {% else %}
-      <a href="{{ url_for('auth.login') }}"
-        class="px-4 py-1.5 rounded bg-[#E10600] text-white text-sm hover:brightness-110 transition">
-        Login
-      </a>
-      {% endif %}
-    </div>
-  </header>
-  {% endblock %} -->
+  {% block navbar %}{% endblock %}
 
   <!-- Flash messages -->
   {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
   <div class="fixed top-4 right-4 z-50 space-y-2">
     {% for category, msg in messages %}
-    <div class="flash-msg px-4 py-2 rounded-lg shadow text-white
-      {% if category == 'success' %}bg-green-500
-      {% elif category == 'error' %}bg-red-500
-      {% else %}bg-blue-500{% endif %}">
+    <div class="flash-msg px-4 py-3 rounded-btn shadow-md
+      {% if category == 'success' %}bg-[rgba(52,212,0,0.12)] text-[#1A8A00] border border-[rgba(52,212,0,0.3)]
+      {% elif category == 'error' %}bg-[rgba(225,6,0,0.1)] text-corporate-red border border-[rgba(225,6,0,0.25)]
+      {% else %}bg-[rgba(41,98,255,0.1)] text-brand-blue border border-[rgba(41,98,255,0.25)]{% endif %}">
       {{ msg }}
     </div>
     {% endfor %}
@@ -80,7 +80,7 @@
   {% endwith %}
 
   <!-- Main content -->
-  <main class="relative z-10 flex items-center justify-center min-h-[calc(100vh-64px)] px-4">
+  <main class="{% block main_class %}relative z-10 flex items-center justify-center min-h-screen px-4{% endblock %}">
     {% block content %}{% endblock %}
   </main>
 

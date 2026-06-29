@@ -1,19 +1,27 @@
 {% extends 'base.html' %}
-{% block title %}Verify your email{% endblock %}
+{% block title %}Verify Email | Gold Circle Investments Ltd{% endblock %}
+
+{% block background %}
+<div class="auth-page-bg"></div>
+{% endblock %}
+
 {% block content %}
-<main class="form-container" style="max-width:520px;">
-    <div class="form-header">
-        <h3>Verify Email</h3>
+<div class="w-full max-w-md animate-fade-in">
+  <main class="auth-card">
+    <div class="auth-card-header">
+      <h2 class="auth-title">Verify Email</h2>
+      <p class="auth-subtitle">
+        A verification email was sent to <strong>{{ user.email }}</strong>.
+        Click the link in the message to verify your account.
+      </p>
     </div>
 
-    <p class="note">A verification email was sent to <strong>{{ user.email }}</strong>. Click the link in the message to
-        verify your account.</p>
-
     <form method="POST" action="{{ url_for('auth.resend_verification') }}">
-        <div class="form-group">
-            <button class="btn btn-primary" type="submit">Resend verification email</button>
-            <a class="btn btn-secondary" href="{{ url_for('main.index') }}">Home</a>
-        </div>
+      <div class="flex gap-3 flex-wrap">
+        <button class="auth-btn flex-1" type="submit">Resend verification email</button>
+        <a class="btn btn-secondary" href="{{ url_for('main.index') }}">Home</a>
+      </div>
     </form>
-</main>
+  </main>
+</div>
 {% endblock %}

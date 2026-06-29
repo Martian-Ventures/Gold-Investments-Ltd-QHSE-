@@ -78,7 +78,7 @@ function saveAudit() {
       isValid = false;
       input.style.borderColor = "red";
     } else if (input) {
-      input.style.borderColor = "#ddd";
+      input.style.borderColor = "var(--color-border, #E5E7EB)";
     }
   });
 
@@ -233,7 +233,7 @@ function saveAudit() {
       isValid = false;
       input.style.borderColor = "red";
     } else if (input) {
-      input.style.borderColor = "#ddd";
+      input.style.borderColor = "var(--color-border, #E5E7EB)";
     }
   });
 
@@ -367,7 +367,7 @@ function validateNewAuditForm() {
       isValid = false;
       field.style.borderColor = "red";
     } else if (field) {
-      field.style.borderColor = "#ddd";
+      field.style.borderColor = "var(--color-border, #E5E7EB)";
     }
   });
 
@@ -426,7 +426,7 @@ function validateAuditDetailsForm() {
       isValid = false;
       field.style.borderColor = "red";
     } else if (field) {
-      field.style.borderColor = "#ddd";
+      field.style.borderColor = "var(--color-border, #E5E7EB)";
     }
   });
 
@@ -525,7 +525,7 @@ document.addEventListener("DOMContentLoaded", () => {
       type: "pie",
       data: {
         labels: ["Closed", "Open"],
-        datasets: [{ data: [30, 70], backgroundColor: ["#22c55e", "#f97316"] }],
+        datasets: [{ data: [30, 70], backgroundColor: ["#34D400", "#F57C00"] }],
       },
     });
   }
@@ -654,7 +654,7 @@ function renderIncidentBarChart() {
         {
           label: "Incidents",
           data: [5, 8, 12, 6, 9, 7],
-          backgroundColor: "#3498db",
+          backgroundColor: "#F6B400",
         },
       ],
     },
@@ -698,7 +698,7 @@ function renderCapaPieChart() {
       datasets: [
         {
           data: [open, inProgress, closed],
-          backgroundColor: ["#f39c12", "#3498db", "#2ecc71"],
+          backgroundColor: ["#F57C00", "#F6B400", "#34D400"],
         },
       ],
     },
