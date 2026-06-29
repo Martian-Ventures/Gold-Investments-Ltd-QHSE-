@@ -1,2 +1,7 @@
+[project]
+name = "gold-investments-ltd"
+version = "0.1.0"
+dependencies = []
+
 [tool.vercel]
 entrypoint = "run:app"
