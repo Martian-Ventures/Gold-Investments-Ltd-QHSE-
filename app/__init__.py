@@ -22,7 +22,6 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    # Override from environment if set, otherwise keep Config defaults
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY") or app.config.get("SECRET_KEY") or "dev-secret"
     db_url = os.getenv("DATABASE_URL")
     if db_url:
@@ -30,14 +29,12 @@ def create_app(config_class=Config):
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config['REMEMBER_COOKIE_DURATION'] = 3600
     app.config['SESSION_PROTECTION'] = 'basic'
+    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
     db.init_app(app)
     migrate.init_app(app, db)
     login.init_app(app)
     mail.init_app(app)
-
-    # Disable static file caching in development
-    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
     login.login_message_category = "info"
 
@@ -47,7 +44,6 @@ def create_app(config_class=Config):
     def load_user(id):
         return User.query.get(int(id))
 
-    # JWT
     jwt = JWTManager(app)
 
     # Blueprints
@@ -60,6 +56,10 @@ def create_app(config_class=Config):
     from app.admin.routes import admin_bp
     app.register_blueprint(admin_bp, url_prefix='/admin')
 
+    # Register incidents blueprint
+    from app.incidents.routes import incidents_bp
+    app.register_blueprint(incidents_bp, url_prefix='/incidents')
+
     # Root redirect
     @app.route("/")
     def index():
@@ -67,7 +67,6 @@ def create_app(config_class=Config):
             return redirect(url_for('main.dashboard'))
         return redirect(url_for('auth.register'))
 
-    # Initialize scheduler AFTER app is created
     scheduler.init_app(app)
     scheduler.start()
 

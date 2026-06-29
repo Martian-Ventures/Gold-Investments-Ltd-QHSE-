@@ -18,6 +18,35 @@ def list_incidents():
     return jsonify(result)
 
 
+@incidents_bp.route("/create", methods=["POST"])
+@login_required
+def create_incident():
+    """JSON endpoint called by the inline dashboard JS form submission."""
+    data = request.get_json(silent=True) or {}
+    try:
+        inc = Incident(
+            title=data.get("title", "Untitled"),
+            department=data.get("department"),
+            category=data.get("category"),
+            type=data.get("type") or data.get("category"),
+            severity=data.get("severity"),
+            description=data.get("description"),
+            employees_affected=int(data.get("employees_affected", 0)),
+            hours_per_employee=float(data.get("hours_per_employee", 0)),
+            idle_time_hours=float(data.get("idle_hours", 0)),
+            cost_per_hour=float(data.get("cost_per_hour", 0)),
+            hours_lost=float(data.get("hours_lost", 0)),
+            total_cost=float(data.get("total_cost", 0)),
+            reported_at=datetime.utcnow(),
+            created_by=current_user,
+        )
+        db.session.add(inc)
+        db.session.commit()
+        return jsonify({"status": "ok", "id": inc.id})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 400
+
 @incidents_bp.route("/new", methods=["GET", "POST"])
 @login_required
 def new_incident():
@@ -163,6 +192,14 @@ def delete_incident(incident_id):
     db.session.commit()
     flash("Incident deleted successfully!", "success")
     return redirect(url_for("incidents.list_incidents"))
+
+@incidents_bp.route("/<int:incident_id>/close", methods=["POST"])
+@login_required
+def close_incident(incident_id):
+    inc = Incident.query.get_or_404(incident_id)
+    inc.status = "Closed"
+    db.session.commit()
+    return jsonify({"status": "ok", "message": "Incident closed"})
     
 
 
@@ -183,7 +220,3 @@ def calculate_idle_time(reported_at):
     if minutes: result.append(f"{minutes} minutes")
 
     return ", ".join(result) or "0 minutes"
-
-@incidents_bp.template_filter('idle_time')
-def idle_time_filter(reported_at):
-    return calculate_idle_time(reported_at)

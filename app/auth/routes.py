@@ -127,11 +127,11 @@ def login():
         flash('Login successful!', 'success')
     
 
-        # Redirect based on role (adjust these endpoints to what you actually have)
+        # Redirect based on role
         if user.role == "admin":
-            next_page = url_for('admin.admin_dashboard')  # or whatever your admin route is
+            next_page = url_for('main.dashboard')
         elif user.role == "auditor":
-            next_page = url_for('auditor.auditor_dashboard')
+            next_page = url_for('main.dashboard')
         else:
             next_page = url_for('main.dashboard')
 

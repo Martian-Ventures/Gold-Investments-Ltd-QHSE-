@@ -1,1126 +1,690 @@
-// Tab functionality
-document.addEventListener("DOMContentLoaded", function () {
-  // Initialize tabs
-  initTabs();
+/* ==========================================================================
+   Gold Circle Investments Ltd — QHSE Platform
+   Main Application Script
+   ========================================================================== */
 
-  // Set default dates
-  setDefaultDates();
+/* --------------------------------------------------------------------------
+   UTILITIES
+   -------------------------------------------------------------------------- */
 
-  // Add event listener for save audit button
-  document.getElementById("save-audit").addEventListener("click", saveAudit);
-});
+function escapeHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' })[c]
+  );
+}
 
-function initTabs() {
-  const tabs = document.querySelectorAll(".tab");
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  return new Date(dateStr).toLocaleDateString('en-GB');
+}
 
-  tabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
-      // Remove active class from all tabs and contents
-      document
-        .querySelectorAll(".tab")
-        .forEach((t) => t.classList.remove("active"));
-      document
-        .querySelectorAll(".tab-content")
-        .forEach((c) => c.classList.remove("active"));
+function formatIdleTime(reportedAt) {
+  if (!reportedAt) return 'Unknown';
+  const diffMs = Date.now() - new Date(reportedAt).getTime();
+  const minutes = Math.floor(diffMs / 60000);
+  const hours   = Math.floor(minutes / 60);
+  const days    = Math.floor(hours / 24);
+  const parts   = [];
+  if (days > 0)        parts.push(`${days}d`);
+  if (hours % 24 > 0)  parts.push(`${hours % 24}h`);
+  if (minutes % 60 > 0) parts.push(`${minutes % 60}m`);
+  return parts.join(' ') || '0m';
+}
 
-      // Add active class to clicked tab
-      tab.classList.add("active");
+/* --------------------------------------------------------------------------
+   SIDEBAR — section show/hide
+   The sidebar nav items each have data-section="<id>".
+   Clicking one hides all sections and shows the target.
+   -------------------------------------------------------------------------- */
 
-      // Show corresponding content
-      const tabId = tab.getAttribute("data-tab");
-      document.getElementById(tabId).classList.add("active");
+function initSidebar() {
+  const menuItems = document.querySelectorAll('.menu li[data-section]');
+  if (!menuItems.length) return;
 
-      // Update breadcrumb and page title based on active tab
-      updatePageInfo(tabId);
+  const allSections = [
+    'dashboard-section',
+    'audit-section',
+    'incident-section',
+    'training-section',
+    'docs-section'
+  ];
+
+  function showSection(sectionId) {
+    allSections.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('hidden');
+    });
+    const target = document.getElementById(sectionId);
+    if (target) target.classList.remove('hidden');
+
+    // Update active nav item
+    menuItems.forEach(li => {
+      li.classList.toggle('active', li.dataset.section === sectionId);
+    });
+
+    // Update breadcrumb if present
+    const bc = document.getElementById('breadcrumb');
+    if (bc) {
+      const labels = {
+        'dashboard-section':  'Home / Dashboard',
+        'audit-section':      'Home / Audit Management / Audit Plan',
+        'incident-section':   'Home / Incident Management',
+        'training-section':   'Home / Training & Briefings',
+        'docs-section':       'Home / Document Management',
+      };
+      bc.textContent = labels[sectionId] || 'Home';
+    }
+  }
+
+  // Click handlers
+  menuItems.forEach(item => {
+    item.addEventListener('click', () => showSection(item.dataset.section));
+  });
+
+  // Show the section marked data-active on the sidebar div
+  const sidebar = document.querySelector('.sidebar[data-active]');
+  if (sidebar) {
+    showSection(sidebar.dataset.active);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   TABS — scoped to a parent container
+   Each tab has data-tab="<content-id>".
+   Only affects tabs/contents within the same nearest ancestor that contains both.
+   -------------------------------------------------------------------------- */
+
+function initTabs(root) {
+  const container = root || document;
+  const tabs = container.querySelectorAll(':scope .tab');
+  if (!tabs.length) return;
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      // Find the closest ancestor that has both .tabs and .tab-content children
+      const tabsBar = tab.closest('.tabs');
+      if (!tabsBar) return;
+      const section = tabsBar.closest('#audit-section, #incident-section, .main-content, body') || container;
+
+      // Deactivate all tabs in this bar
+      tabsBar.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      // Deactivate all tab-contents in this section
+      section.querySelectorAll(':scope > .tab-content, .tab-content').forEach(c => {
+        // Only deactivate contents that belong to this tab group
+        if (tabsBar.querySelector(`[data-tab="${c.id}"]`)) {
+          c.classList.remove('active');
+        }
+      });
+
+      const targetId = tab.dataset.tab;
+      const targetEl = section.querySelector('#' + targetId) || document.getElementById(targetId);
+      if (targetEl) targetEl.classList.add('active');
+
+      // Update page title/breadcrumb for audit section
+      updateAuditPageInfo(targetId);
+
+      // Render charts when incident dashboard tab opens
+      if (targetId === 'incident-dashboard') renderDashboardCharts();
     });
   });
 }
 
-function updatePageInfo(tabId) {
-  const breadcrumb = document.getElementById("breadcrumb");
-  const pageTitle = document.getElementById("pageTitle");
-
-  switch (tabId) {
-    case "new-audit":
-      breadcrumb.textContent = "Home / Audit Management / New Audit";
-      pageTitle.textContent = "New Audit";
-      break;
-    case "audit-details":
-      breadcrumb.textContent =
-        "Audit Management / View All Audit / Audit Details";
-      pageTitle.textContent = "Audit Details";
-      break;
-  }
-}
-
-function setDefaultDates() {
-  const today = new Date();
-  const formattedDate = today.toISOString().split("T")[0];
-
-  // Set default dates for audit forms
-  const auditDate = document.getElementById("audit-date");
-  const conductedDate = document.getElementById("conducted-date");
-
-  if (auditDate) auditDate.value = formattedDate;
-  if (conductedDate) conductedDate.value = formattedDate;
-}
-
-function saveAudit() {
-  // Basic form validation
-  const requiredFields = document.querySelectorAll(".required");
-  let isValid = true;
-
-  requiredFields.forEach((field) => {
-    const input = field
-      .closest(".form-group")
-      .querySelector("input, select, textarea");
-    if (input && !input.value.trim()) {
-      isValid = false;
-      input.style.borderColor = "red";
-    } else if (input) {
-      input.style.borderColor = "var(--color-border, #E5E7EB)";
-    }
-  });
-
-  if (!isValid) {
-    alert("Please fill in all required fields marked with *");
-    return;
-  }
-
-  // Simulate saving data
-  alert("Audit saved successfully!");
-
-  // In a real application, you would send data to a server here
-  // Example:
-  // const auditData = {
-  //     organization: document.getElementById('organization').value,
-  //     auditStandard: document.getElementById('audit-standard').value,
-  //     auditDate: document.getElementById('audit-date').value,
-  //     // ... other fields
-  // };
-  //
-  // fetch('/api/audits', {
-  //     method: 'POST',
-  //     headers: { 'Content-Type': 'application/json' },
-  //     body: JSON.stringify(auditData)
-  // })
-  // .then(response => response.json())
-  // .then(data => {
-  //     alert('Audit saved successfully!');
-  // })
-  // .catch(error => {
-  //     alert('Error saving audit: ' + error.message);
-  // });
-}
-
-// Additional utility functions
-function formatDate(date) {
-  const d = new Date(date);
-  return d.toLocaleDateString("en-GB"); // DD/MM/YYYY format
-}
-
-function validateEmail(email) {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
-}
-
-// Export functions for use in other modules (if needed)
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = {
-    initTabs,
-    updatePageInfo,
-    setDefaultDates,
-    saveAudit,
-    formatDate,
-    validateEmail,
+function updateAuditPageInfo(tabId) {
+  const bc = document.getElementById('breadcrumb');
+  const pt = document.getElementById('pageTitle');
+  const map = {
+    'audit-plan':       ['Home / Audit Management / Audit Plan',         'Audit Plan'],
+    'new-audit':        ['Home / Audit Management / New Audit',          'New Audit'],
+    'audit-details':    ['Audit Management / View All Audit / Details',  'Audit Details'],
+    'incident-dashboard':['Home / Incident Management / Dashboard',      'Incident Management'],
+    'all-incidents':    ['Home / Incident Management / All Incidents',   'All Incidents'],
+    'new-incident':     ['Home / Incident Management / New Incident',    'New Incident'],
+    'incident-details': ['Home / Incident Management / Details',         'Incident Details'],
+    'capas':            ['Home / Incident Management / CAPA',            'CAPA'],
+    'document-management':['Home / Incident Management / Documents',     'Document Management'],
+    'trainings-briefings':['Home / Incident Management / Trainings',     'Trainings & Briefings'],
   };
-}
-
-// Tab functionality
-document.addEventListener("DOMContentLoaded", function () {
-  // Initialize tabs
-  initTabs();
-
-  // Set default dates
-  setDefaultDates();
-
-  // Add event listener for save audit button
-  document.getElementById("save-audit").addEventListener("click", saveAudit);
-
-  // Add event listener for save plan button
-  document.getElementById("save-plan").addEventListener("click", saveAuditPlan);
-
-  // Add event listener for send approval button
-  document
-    .getElementById("send-approval")
-    .addEventListener("click", sendForApproval);
-
-  // Add interactivity to audit plan table
-  initAuditPlanTable();
-});
-
-function initTabs() {
-  const tabs = document.querySelectorAll(".tab");
-
-  tabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
-      // Remove active class from all tabs and contents
-      document
-        .querySelectorAll(".tab")
-        .forEach((t) => t.classList.remove("active"));
-      document
-        .querySelectorAll(".tab-content")
-        .forEach((c) => c.classList.remove("active"));
-
-      // Add active class to clicked tab
-      tab.classList.add("active");
-
-      // Show corresponding content
-      const tabId = tab.getAttribute("data-tab");
-      document.getElementById(tabId).classList.add("active");
-
-      // Update breadcrumb and page title based on active tab
-      updatePageInfo(tabId);
-    });
-  });
-}
-
-function updatePageInfo(tabId) {
-  const breadcrumb = document.getElementById("breadcrumb");
-  const pageTitle = document.getElementById("pageTitle");
-
-  switch (tabId) {
-    case "audit-plan":
-      breadcrumb.textContent = "Home / Audit Management / Audit Plan";
-      pageTitle.textContent = "Audit Plan";
-      break;
-    case "new-audit":
-      breadcrumb.textContent = "Home / Audit Management / New Audit";
-      pageTitle.textContent = "New Audit";
-      break;
-    case "audit-details":
-      breadcrumb.textContent =
-        "Audit Management / View All Audit / Audit Details";
-      pageTitle.textContent = "Audit Details";
-      break;
+  if (map[tabId]) {
+    if (bc) bc.textContent = map[tabId][0];
+    if (pt) pt.textContent = map[tabId][1];
   }
 }
+
+/* --------------------------------------------------------------------------
+   AUDIT MANAGEMENT
+   -------------------------------------------------------------------------- */
 
 function setDefaultDates() {
-  const today = new Date();
-  const formattedDate = today.toISOString().split("T")[0];
-
-  // Set default dates for audit forms
-  const auditDate = document.getElementById("audit-date");
-  const conductedDate = document.getElementById("conducted-date");
-  const planDate = document.getElementById("plan-date");
-
-  if (auditDate) auditDate.value = formattedDate;
-  if (conductedDate) conductedDate.value = formattedDate;
-  if (planDate) planDate.value = formattedDate;
-}
-
-function saveAudit() {
-  // Basic form validation
-  const requiredFields = document.querySelectorAll(".required");
-  let isValid = true;
-
-  requiredFields.forEach((field) => {
-    const input = field
-      .closest(".form-group")
-      .querySelector("input, select, textarea");
-    if (input && !input.value.trim()) {
-      isValid = false;
-      input.style.borderColor = "red";
-    } else if (input) {
-      input.style.borderColor = "var(--color-border, #E5E7EB)";
-    }
+  const today = new Date().toISOString().split('T')[0];
+  ['audit-date', 'conducted-date', 'plan-date'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !el.value) el.value = today;
   });
-
-  if (!isValid) {
-    alert("Please fill in all required fields marked with *");
-    return;
-  }
-
-  if (!validateNewAuditForm()) {
-    alert("Please fill in all required fields marked with *");
-    return;
-  }
-
-  // Simulate saving data
-  alert("Audit saved successfully!");
 }
 
 function saveAuditPlan() {
-  const standard = document.getElementById("plan-standard").value;
-  const date = document.getElementById("plan-date").value;
-
-  if (!standard || !date) {
-    alert("Please select both Standard and Plan Date");
-    return;
+  const standard = document.getElementById('plan-standard');
+  const date     = document.getElementById('plan-date');
+  if (!standard?.value || !date?.value) {
+    return alert('Please select both Standard and Plan Date.');
   }
-
-  // Simulate saving audit plan
-  alert("Audit Plan saved successfully!");
-
-  // In a real application, you would send data to a server here
-  // and update the table accordingly
+  alert('Audit Plan saved successfully!');
 }
 
 function sendForApproval() {
-  // Simulate sending for approval
-  const confirmation = confirm(
-    "Are you sure you want to send this audit plan for approval?"
-  );
-
-  if (confirmation) {
-    alert("Audit Plan has been sent for approval successfully!");
-
-    // In a real application, you would update the status and send notifications
+  if (confirm('Send this audit plan for approval?')) {
+    alert('Audit Plan sent for approval successfully!');
   }
+}
+
+function saveAudit() {
+  const fields = ['organization','audit-type','audit-standard','scope',
+                  'audit-date','audit-time','duration','auditor','lead-auditor','auditee'];
+  let valid = true;
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (!el.value.trim()) {
+      el.style.borderColor = 'var(--color-corporate-red)';
+      valid = false;
+    } else {
+      el.style.borderColor = '';
+    }
+  });
+  const shift = document.querySelector('input[name="shift"]:checked');
+  if (!shift) {
+    const opts = document.querySelector('.shift-options');
+    if (opts) opts.style.outline = '2px solid var(--color-corporate-red)';
+    valid = false;
+  }
+  if (!valid) return alert('Please fill in all required fields (*).');
+  alert('Audit saved successfully!');
+}
+
+function updateAudit() {
+  const fields = ['conducted-date','audit-summary','references'];
+  let valid = true;
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (!el.value.trim()) {
+      el.style.borderColor = 'var(--color-corporate-red)';
+      valid = false;
+    } else {
+      el.style.borderColor = '';
+    }
+  });
+  if (!valid) return alert('Please fill in all required fields.');
+  alert('Audit details updated successfully!');
 }
 
 function initAuditPlanTable() {
-  const auditIcons = document.querySelectorAll(".planned-audit");
-
-  auditIcons.forEach((icon) => {
-    icon.addEventListener("click", function () {
-      const month = this.parentElement.cellIndex - 2; // Adjust for # and Organization columns
-      const months = [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-      ];
-      const organization =
-        this.parentElement.parentElement.cells[1].textContent;
-
-      const action = confirm(
-        "Schedule audit for ${organization} in ${months[month]}?"
-      );
-
-      if (action) {
-        // In a real application, you would update the database here
-        this.style.color = "#e74c3c"; // Change color to indicate action
-        setTimeout(() => {
-          this.style.color = "#2ecc71"; // Change back after a moment
-        }, 1000);
+  const months = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+  document.querySelectorAll('.planned-audit').forEach(icon => {
+    icon.addEventListener('click', function () {
+      const colIndex = this.parentElement.cellIndex - 2;
+      const org = this.parentElement.parentElement.cells[1].textContent.trim();
+      const monthName = months[colIndex] || 'Unknown';
+      if (confirm(`Schedule audit for ${org} in ${monthName}?`)) {
+        this.style.color = 'var(--color-orange)';
+        setTimeout(() => { this.style.color = ''; }, 1200);
       }
     });
   });
 }
 
-// Additional utility functions
-function formatDate(date) {
-  const d = new Date(date);
-  return d.toLocaleDateString("en-GB"); // DD/MM/YYYY format
+/* --------------------------------------------------------------------------
+   INCIDENT MANAGEMENT
+   -------------------------------------------------------------------------- */
+
+// In-memory store (demo). Seeded with examples.
+let incidentData = {
+  1: { id:1, title:'Near Miss — Admin Office',  department:'Administration', type:'Near Miss', date:'2025-10-08', severity:'Low',    status:'Open',        investigator:'HSE Officer', location:'Admin Block A', description:'Minor near miss in admin office.' },
+  2: { id:2, title:'Equipment Failure — Pump 4', department:'Production',    type:'Incident',  date:'2025-10-05', severity:'High',   status:'In Progress', investigator:'Supervisor',  location:'Pump Station 4', description:'Pump failure in production area.' },
+  3: { id:3, title:'QC Lab Issue',               department:'Quality Control',type:'Incident',  date:'2025-10-01', severity:'Medium', status:'Closed',      investigator:'Lead Auditor',location:'QC Lab',         description:'Quality control failure detected.' },
+};
+let nextIncidentId = 4;
+
+function refreshIncidentTable() {
+  const tbody = document.getElementById('incident-table-body');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  Object.values(incidentData).sort((a, b) => a.id - b.id).forEach(it => {
+    const statusClass = {
+      'Open':           'status-open',
+      'In Progress':    'status-in-progress',
+      'Closed':         'status-closed',
+    }[it.status] || 'status-open';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${it.id}</td>
+      <td>${escapeHtml(it.title)}</td>
+      <td>${escapeHtml(it.department)}</td>
+      <td>${formatDate(it.date)}</td>
+      <td>${escapeHtml(it.severity || '—')}</td>
+      <td><span class="status-badge ${statusClass}">${escapeHtml(it.status)}</span></td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-small" onclick="viewIncident(${it.id})">View</button>
+        ${it.status !== 'Closed'
+          ? `<button class="btn btn-success btn-small" onclick="closeIncident(${it.id})">Close</button>`
+          : ''}
+        <button class="btn btn-danger btn-small" onclick="deleteIncidentLocal(${it.id})">Delete</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  refreshDashboardKPIs();
 }
 
-function validateEmail(email) {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
+function refreshDashboardKPIs() {
+  const vals = Object.values(incidentData);
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('kpi-open',       vals.filter(v => v.status === 'Open').length);
+  set('kpi-inprogress', vals.filter(v => v.status === 'In Progress').length);
+  set('kpi-closed',     vals.filter(v => v.status === 'Closed').length);
 }
 
-// Export functions for use in other modules (if needed)
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = {
-    initTabs,
-    updatePageInfo,
-    setDefaultDates,
-    saveAudit,
-    saveAuditPlan,
-    sendForApproval,
-    initAuditPlanTable,
-    formatDate,
-    validateEmail,
-  };
+function filterIncidents() {
+  const q = (document.getElementById('incidentSearch')?.value || '').toLowerCase();
+  document.querySelectorAll('#incident-table-body tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
 }
 
-// Additional function for new audit form validation
-function validateNewAuditForm() {
-  const requiredFields = [
-    "organization",
-    "audit-type",
-    "audit-standard",
-    "scope",
-    "audit-date",
-    "audit-time",
-    "duration",
-    "auditor",
-    "lead-auditor",
-    "auditee",
-  ];
+function viewIncident(id) {
+  const data = incidentData[id];
+  if (!data) return alert('Incident not found.');
 
-  let isValid = true;
+  const set = (elId, val) => { const el = document.getElementById(elId); if (el) el.value = val || ''; };
+  set('detail-id',          data.id);
+  set('detail-title',       data.title);
+  set('detail-department',  data.department);
+  set('detail-type',        data.type);
+  set('detail-date',        data.date);
+  set('detail-severity',    data.severity);
+  set('detail-description', data.description);
+  set('detail-investigator',data.investigator);
+  set('detail-location',    data.location);
+  set('detail-rca',         data.rca || '');
 
-  requiredFields.forEach((fieldId) => {
-    const field = document.getElementById(fieldId);
-    if (field && !field.value.trim()) {
-      isValid = false;
-      field.style.borderColor = "red";
-    } else if (field) {
-      field.style.borderColor = "var(--color-border, #E5E7EB)";
-    }
-  });
+  const statusEl = document.getElementById('detail-status');
+  if (statusEl) statusEl.value = data.status;
 
-  // Validate shift selection
-  const shiftSelected = document.querySelector('input[name="shift"]:checked');
-  if (!shiftSelected) {
-    isValid = false;
-    document.querySelector(".shift-options").style.outline = "2px solid red";
-    document.querySelector(".shift-options").style.padding = "5px";
-  } else {
-    document.querySelector(".shift-options").style.outline = "none";
-  }
-
-  return isValid;
+  // Switch to Incident Details tab
+  switchToTab('incident-details', '#incident-section');
 }
 
-// Function to handle update audit button
-document.getElementById("update-audit").addEventListener("click", function () {
-  // Validate form before updating
-  if (validateAuditDetailsForm()) {
-    // Simulate update process
-    alert("Audit details updated successfully!");
+function switchToTab(tabId, sectionSelector) {
+  const section = document.querySelector(sectionSelector) || document;
+  section.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  const target = section.querySelector('#' + tabId) || document.getElementById(tabId);
+  if (target) target.classList.add('active');
 
-    // In real application, you would send data to server here
-    // Example:
-    // const auditData = {
-    //     conductedDate: document.getElementById('conducted-date').value,
-    //     auditSummary: document.getElementById('audit-summary').value,
-    //     references: document.getElementById('references').value
-    // };
-    //
-    // fetch('/api/audits/update', {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify(auditData)
-    // })
-    // .then(response => response.json())
-    // .then(data => {
-    //     alert('Audit details updated successfully!');
-    // })
-    // .catch(error => {
-    //     alert('Error updating audit: ' + error.message);
-    // });
-  }
-});
-
-// Function to validate audit details form
-function validateAuditDetailsForm() {
-  const requiredFields = ["conducted-date", "audit-summary", "references"];
-
-  let isValid = true;
-
-  requiredFields.forEach((fieldId) => {
-    const field = document.getElementById(fieldId);
-    if (field && !field.value.trim()) {
-      isValid = false;
-      field.style.borderColor = "red";
-    } else if (field) {
-      field.style.borderColor = "var(--color-border, #E5E7EB)";
-    }
-  });
-
-  if (!isValid) {
-    alert("Please fill in all required fields");
-    return false;
-  }
-
-  return true;
-}
-
-// Function to handle search functionality
-document.querySelectorAll(".search-input").forEach((input) => {
-  input.addEventListener("input", function () {
-    const searchTerm = this.value.toLowerCase();
-    const table = this.closest(".table-container").querySelector("table");
-    const rows = table.querySelectorAll("tbody tr");
-
-    rows.forEach((row) => {
-      const text = row.textContent.toLowerCase();
-      if (text.includes(searchTerm)) {
-        row.style.display = "";
-      } else {
-        row.style.display = "none";
-      }
-    });
-  });
-});
-
-// Function to handle add buttons
-document
-  .querySelectorAll(".table-actions .btn.btn-success")
-  .forEach((button) => {
-    button.addEventListener("click", function () {
-      const tableTitle =
-        this.closest(".table-header").querySelector("h3").textContent;
-
-      if (tableTitle === "Document Attachment") {
-        // Handle upload functionality
-        alert("Upload document functionality would open here");
-        // In real application, you would trigger file upload dialog
-        // document.getElementById('file-input').click();
-      } else {
-        // Handle add new record functionality
-        alert(
-          "Add new " +
-            tableTitle.toLowerCase() +
-            " functionality would open here"
-        );
-      }
-    });
-  });
-
-// Function to handle Close button in Document List
-document
-  .querySelector(".document-actions .btn-danger")
-  .addEventListener("click", function () {
-    const confirmation = confirm(
-      "Are you sure you want to close this audit? This action cannot be undone."
-    );
-
-    if (confirmation) {
-      // Simulate closing the audit
-      alert("Audit closed successfully!");
-
-      // In real application, you would update the audit status
-      // Example:
-      // fetch('/api/audits/close', {
-      //     method: 'POST',
-      //     headers: { 'Content-Type': 'application/json' },
-      //     body: JSON.stringify({ auditId: 'current-audit-id' })
-      // })
-      // .then(response => response.json())
-      // .then(data => {
-      //     alert('Audit closed successfully!');
-      //     // Redirect or refresh the page
-      //     window.location.reload();
-      // })
-      // .catch(error => {
-      //     alert('Error closing audit: ' + error.message);
-      // });
-    }
-  });
-
-/* Incident Dashboard Charts (using Chart.js) */
-document.addEventListener("DOMContentLoaded", () => {
-  if (typeof Chart !== "undefined") {
-    new Chart(document.getElementById("incident-bar-chart"), {
-      type: "bar",
-      data: {
-        labels: ["Jan", "Feb", "Mar", "Apr", "May"],
-        datasets: [{ label: "Incidents", data: [5, 15, 8, 20, 10] }],
-      },
-    });
-    new Chart(document.getElementById("incident-pie-chart"), {
-      type: "pie",
-      data: {
-        labels: ["Closed", "Open"],
-        datasets: [{ data: [30, 70], backgroundColor: ["#34D400", "#F57C00"] }],
-      },
+  const tabsBar = section.querySelector('.tabs');
+  if (tabsBar) {
+    tabsBar.querySelectorAll('.tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.tab === tabId);
     });
   }
-});
-
-/* Document Upload */
-function uploadDocument() {
-  const title = document.getElementById("doc-title").value;
-  const file = document.getElementById("doc-file").value;
-  if (!title || !file) return alert("Please fill all fields");
-  const tbody = document.getElementById("documentTable");
-  const row = tbody.insertRow();
-  row.innerHTML = `<td>${tbody.rows.length + 1}</td><td>${title}</td><td>${file
-    .split("\\")
-    .pop()}</td><td>${new Date().toLocaleDateString()}</td>`;
-  document.getElementById("documentUploadForm").reset();
+  updateAuditPageInfo(tabId);
 }
 
-/* Trainings */
-function addTraining() {
-  const title = document.getElementById("training-title").value;
-  const date = document.getElementById("training-date").value;
-  const file = document.getElementById("training-file").value;
-  if (!title || !date || !file) return alert("Please fill all fields");
-  const tbody = document.getElementById("trainingTable");
-  const row = tbody.insertRow();
-  row.innerHTML = `<td>${
-    tbody.rows.length + 1
-  }</td><td>${title}</td><td>${date}</td><td>${file.split("\\").pop()}</td>`;
-  document.getElementById("trainingForm").reset();
+function closeIncident(id) {
+  if (!confirm('Mark this incident as Closed?')) return;
+  if (incidentData[id]) incidentData[id].status = 'Closed';
+  refreshIncidentTable();
+
+  // Also persist to backend
+  fetch(`/incidents/${id}/close`, { method: 'POST', credentials: 'same-origin' })
+    .catch(() => {}); // silent — local state already updated
 }
 
-document.querySelectorAll("#incident-section .tabs .tab").forEach((tab) => {
-  tab.addEventListener("click", () => {
-    const parent = tab.closest("#incident-section");
-    parent
-      .querySelectorAll(".tab")
-      .forEach((t) => t.classList.remove("active"));
-    tab.classList.add("active");
-    parent
-      .querySelectorAll(".tab-content")
-      .forEach((tc) => tc.classList.remove("active"));
-    const target = tab.getAttribute("data-tab");
-    parent.querySelector("#" + target).classList.add("active");
-  });
-});
+function deleteIncidentLocal(id) {
+  if (!confirm('Delete this incident permanently?')) return;
+  delete incidentData[id];
+  refreshIncidentTable();
 
-/* -------------- CAPA & Incident Dashboard Management -------------- */
-let incidentBarChart = null;
-let capaPieChart = null;
-let chartsRendered = false; // Prevent multiple renders
-
-// Escape HTML (safe for table)
-function escapeHtml(text) {
-  return text.replace(/[&<>"']/g, function (m) {
-    return {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#039;",
-    }[m];
-  });
+  fetch(`/incidents/${id}/delete`, { method: 'POST', credentials: 'same-origin' })
+    .catch(() => {});
 }
 
-// Create new CAPA entry
-function createCapa() {
-  const incidentId = document.getElementById("capa-incident-id").value;
-  const desc = document.getElementById("capa-desc").value.trim();
-  const owner = document.getElementById("capa-owner").value.trim();
-  const due = document.getElementById("capa-due").value;
+function updateIncidentDetails() {
+  const id = parseInt(document.getElementById('detail-id')?.value);
+  if (!id || !incidentData[id]) return alert('No incident selected.');
+  incidentData[id].status      = document.getElementById('detail-status')?.value    || incidentData[id].status;
+  incidentData[id].description = document.getElementById('detail-description')?.value || incidentData[id].description;
+  incidentData[id].investigator= document.getElementById('detail-investigator')?.value || incidentData[id].investigator;
+  incidentData[id].location    = document.getElementById('detail-location')?.value   || incidentData[id].location;
+  incidentData[id].rca         = document.getElementById('detail-rca')?.value        || '';
+  alert('Incident updated successfully.');
+  refreshIncidentTable();
+}
 
-  if (!desc || !owner || !due) {
-    return alert(
-      "Please fill required fields: Action Description, Owner, Due Date"
-    );
+function submitIncident() {
+  const get = id => document.getElementById(id)?.value?.trim() || '';
+
+  const title      = get('incident-title');
+  const department = get('incident-department');
+  const type       = get('incident-type') || get('incident-category');
+  const date       = get('incident-datetime') || get('incident-date');
+  const severity   = get('incident-severity');
+  const location   = get('incident-location');
+  const description= get('incident-description');
+  const investigator= get('incident-investigator');
+
+  if (!title || !department || !type || !date) {
+    return alert('Please fill in: Title, Department, Type, and Date.');
   }
 
-  const tableBody = document.querySelector("#capa-table tbody");
-  const newRow = document.createElement("tr");
-  const newId = tableBody.children.length + 1;
+  const employees        = parseFloat(get('incident-employees'))         || 0;
+  const hoursPerEmployee = parseFloat(get('incident-hours-per-employee'))|| 0;
+  const idleHours        = parseFloat(get('incident-idle-hours'))        || 0;
+  const costPerHour      = parseFloat(get('incident-cost-per-hour'))     || 0;
+  const hoursLost        = employees * hoursPerEmployee;
+  const totalCost        = hoursLost * costPerHour;
 
-  newRow.innerHTML = `
-        <td>${newId}</td>
-        <td>${incidentId ? escapeHtml(incidentId) : "N/A"}</td>
-        <td>${escapeHtml(desc)}</td>
-        <td>${escapeHtml(owner)}</td>
-        <td>${due}</td>
-        <td><span class="status-badge status-open">Open</span></td>
-        <td><button class="btn btn-success btn-small" onclick="markCapaComplete(this)">Mark Complete</button></td>
-    `;
-
-  tableBody.appendChild(newRow);
+  const id = nextIncidentId++;
+  incidentData[id] = { id, title, department, type, date, severity, location,
+    description, investigator, employees, hoursLost, costPerHour, totalCost, status: 'Open' };
 
   // Reset form
-  document.getElementById("capa-incident-id").value = "";
-  document.getElementById("capa-desc").value = "";
-  document.getElementById("capa-owner").value = "";
-  document.getElementById("capa-due").value = "";
+  const form = document.getElementById('newIncidentForm');
+  if (form) form.reset();
+  const fileList = document.getElementById('file-list');
+  if (fileList) fileList.innerHTML = '';
 
-  // Update CAPA pie chart dynamically
+  refreshIncidentTable();
+
+  // Switch to All Incidents tab
+  switchToTab('all-incidents', '#incident-section');
+
+  // Persist to backend (non-blocking)
+  fetch('/incidents/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
+    body: JSON.stringify({ title, department, category: type, type, date, severity,
+      location, description, investigator, employees_affected: employees,
+      hours_per_employee: hoursPerEmployee, idle_hours: idleHours,
+      cost_per_hour: costPerHour, hours_lost: hoursLost, total_cost: totalCost }),
+  }).catch(() => {});
+}
+
+function calculateIncidentLoss() {
+  const get = id => parseFloat(document.getElementById(id)?.value) || 0;
+  const employees        = get('incident-employees');
+  const hoursPerEmployee = get('incident-hours-per-employee');
+  const costPerHour      = get('incident-cost-per-hour');
+  const hoursLost        = employees * hoursPerEmployee;
+  const totalCost        = hoursLost * costPerHour;
+
+  const hlEl = document.getElementById('incident-hours-lost');
+  const tcEl = document.getElementById('incident-total-cost');
+  if (hlEl) hlEl.value = hoursLost + ' hours';
+  if (tcEl) tcEl.value = '$' + totalCost.toFixed(2);
+}
+
+function captureGeo() {
+  const out = document.getElementById('geo-result');
+  if (!navigator.geolocation) {
+    if (out) out.textContent = 'Geolocation not supported.';
+    return;
+  }
+  if (out) out.textContent = 'Requesting location…';
+  navigator.geolocation.getCurrentPosition(pos => {
+    const coords = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
+    const locEl = document.getElementById('incident-location');
+    if (locEl) locEl.value = coords;
+    if (out)   out.textContent = 'Captured: ' + coords;
+  }, err => {
+    if (out) out.textContent = 'Error: ' + err.message;
+  }, { enableHighAccuracy: true, timeout: 10000 });
+}
+
+/* --------------------------------------------------------------------------
+   CAPA
+   -------------------------------------------------------------------------- */
+
+function createCapa() {
+  const incidentId = document.getElementById('capa-incident-id')?.value || '';
+  const desc  = document.getElementById('capa-desc')?.value.trim();
+  const owner = document.getElementById('capa-owner')?.value.trim();
+  const due   = document.getElementById('capa-due')?.value;
+
+  if (!desc || !owner || !due) {
+    return alert('Please fill: Action Description, Owner, Due Date.');
+  }
+
+  const tableBody = document.querySelector('#capa-table tbody');
+  if (!tableBody) return;
+  const newId = tableBody.children.length + 1;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>${newId}</td>
+    <td>${incidentId ? escapeHtml(incidentId) : 'N/A'}</td>
+    <td>${escapeHtml(desc)}</td>
+    <td>${escapeHtml(owner)}</td>
+    <td>${due}</td>
+    <td><span class="status-badge status-open">Open</span></td>
+    <td><button class="btn btn-success btn-small" onclick="markCapaComplete(this)">Mark Complete</button></td>`;
+  tableBody.appendChild(tr);
+
+  ['capa-incident-id','capa-desc','capa-owner','capa-due'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
   updateCapaPieChart();
 }
 
-// Mark CAPA as complete
 function markCapaComplete(btn) {
-  const row = btn.closest("tr");
-  row.querySelector(".status-badge").textContent = "Closed";
-  row.querySelector(".status-badge").className = "status-badge status-closed";
+  const row = btn.closest('tr');
+  const badge = row.querySelector('.status-badge');
+  badge.textContent = 'Closed';
+  badge.className = 'status-badge status-closed';
   btn.remove();
   updateCapaPieChart();
 }
 
-// Render Incident Bar Chart
+function renderCapas() {
+  // Stub — CAPA data is managed client-side via createCapa()
+  // This function exists to prevent ReferenceError on page load
+}
+
+/* --------------------------------------------------------------------------
+   CHARTS
+   -------------------------------------------------------------------------- */
+
+let incidentBarChart = null;
+let capaPieChart     = null;
+let chartsRendered   = false;
+
 function renderIncidentBarChart() {
-  const ctxBar = document.getElementById("incident-bar-chart");
-  if (!ctxBar) return;
-
+  const ctx = document.getElementById('incident-bar-chart');
+  if (!ctx || typeof Chart === 'undefined') return;
   if (incidentBarChart) incidentBarChart.destroy();
-
-  incidentBarChart = new Chart(ctxBar, {
-    type: "bar",
+  incidentBarChart = new Chart(ctx, {
+    type: 'bar',
     data: {
-      labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-      datasets: [
-        {
-          label: "Incidents",
-          data: [5, 8, 12, 6, 9, 7],
-          backgroundColor: "#F6B400",
-        },
-      ],
+      labels: ['Jan','Feb','Mar','Apr','May','Jun'],
+      datasets: [{ label: 'Incidents', data: [5,8,12,6,9,7], backgroundColor: '#F6B400', borderRadius: 6 }],
     },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-    },
+    options: { responsive: true, plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } },
   });
 }
 
-// Render CAPA Pie Chart
 function renderCapaPieChart() {
-  const ctxPie = document.getElementById("capa-pie-overview");
-  if (!ctxPie) return;
-
+  const ctx = document.getElementById('capa-pie-overview');
+  if (!ctx || typeof Chart === 'undefined') return;
   if (capaPieChart) capaPieChart.destroy();
 
-  const rows = document.querySelectorAll("#capa-table tbody tr");
-  let open = 0,
-    inProgress = 0,
-    closed = 0;
+  const rows = document.querySelectorAll('#capa-table tbody tr');
+  let open = 0, inProgress = 0, closed = 0;
+  if (!rows.length) { open = 5; inProgress = 3; closed = 7; }
+  else rows.forEach(r => {
+    const s = r.querySelector('.status-badge')?.textContent || '';
+    if (s === 'Open') open++;
+    else if (s === 'In Progress') inProgress++;
+    else if (s === 'Closed') closed++;
+  });
 
-  if (rows.length === 0) {
-    // Pre-fill dummy data
-    open = 5;
-    inProgress = 3;
-    closed = 7;
-  } else {
-    rows.forEach((row) => {
-      const status = row.querySelector(".status-badge").textContent;
-      if (status === "Open") open++;
-      else if (status === "In Progress") inProgress++;
-      else if (status === "Closed") closed++;
-    });
-  }
-
-  capaPieChart = new Chart(ctxPie, {
-    type: "pie",
+  capaPieChart = new Chart(ctx, {
+    type: 'pie',
     data: {
-      labels: ["Open", "In Progress", "Closed"],
-      datasets: [
-        {
-          data: [open, inProgress, closed],
-          backgroundColor: ["#F57C00", "#F6B400", "#34D400"],
-        },
-      ],
+      labels: ['Open','In Progress','Closed'],
+      datasets: [{ data: [open, inProgress, closed],
+        backgroundColor: ['#F57C00','#F6B400','#34D400'] }],
     },
-    options: {
-      responsive: true,
-      plugins: { legend: { position: "bottom" } },
-    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } },
   });
 }
 
-// Update CAPA pie chart dynamically
-function updateCapaPieChart() {
-  renderCapaPieChart();
-}
+function updateCapaPieChart() { renderCapaPieChart(); }
 
-// Render both charts (once)
 function renderDashboardCharts() {
   if (chartsRendered) return;
   chartsRendered = true;
-
   renderIncidentBarChart();
   renderCapaPieChart();
 }
 
-// Tab switching
-document.querySelectorAll(".tabs .tab").forEach((tab) => {
-  tab.addEventListener("click", () => {
-    const target = tab.dataset.tab;
+/* --------------------------------------------------------------------------
+   DOCUMENT MANAGEMENT
+   -------------------------------------------------------------------------- */
 
-    document
-      .querySelectorAll(".tab-content")
-      .forEach((tc) => tc.classList.remove("active"));
-    document
-      .querySelectorAll(".tabs .tab")
-      .forEach((t) => t.classList.remove("active"));
-
-    document.getElementById(target).classList.add("active");
-    tab.classList.add("active");
-
-    if (target === "incident-dashboard") renderDashboardCharts();
-  });
-});
-
-// Initial render if dashboard is active on load
-if (
-  document.getElementById("incident-dashboard").classList.contains("active")
-) {
-  renderDashboardCharts();
+function uploadDocument() {
+  const title = document.getElementById('doc-title')?.value.trim();
+  const fileEl = document.getElementById('doc-file');
+  if (!title || !fileEl?.value) return alert('Please fill all fields.');
+  const tbody = document.getElementById('documentTable');
+  if (!tbody) return;
+  const row = tbody.insertRow();
+  row.innerHTML = `<td>${tbody.rows.length}</td><td>${escapeHtml(title)}</td>
+    <td>${escapeHtml(fileEl.value.split('\\').pop())}</td>
+    <td>${new Date().toLocaleDateString()}</td>`;
+  document.getElementById('documentUploadForm')?.reset();
 }
 
-function closeIncidentAPI(id) {
-  fetch("/incidents/${id}/close", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "same-origin",
-  })
-    .then((r) => r.json())
-    .then((res) => {
-      if (res.status === "ok") {
-        alert("Closed");
-        location.reload();
-      }
+/* --------------------------------------------------------------------------
+   TRAININGS
+   -------------------------------------------------------------------------- */
+
+function addTraining() {
+  const title  = document.getElementById('training-title')?.value.trim();
+  const date   = document.getElementById('training-date')?.value;
+  const fileEl = document.getElementById('training-file');
+  if (!title || !date || !fileEl?.value) return alert('Please fill all fields.');
+  const tbody = document.getElementById('trainingTable');
+  if (!tbody) return;
+  const row = tbody.insertRow();
+  row.innerHTML = `<td>${tbody.rows.length}</td><td>${escapeHtml(title)}</td>
+    <td>${date}</td><td>${escapeHtml(fileEl.value.split('\\').pop())}</td>`;
+  document.getElementById('trainingForm')?.reset();
+}
+
+/* --------------------------------------------------------------------------
+   FILE UPLOAD PREVIEW
+   -------------------------------------------------------------------------- */
+
+function initFilePreview() {
+  const fileInput = document.getElementById('incident-files');
+  if (!fileInput) return;
+  fileInput.addEventListener('change', function () {
+    const list = document.getElementById('file-list');
+    if (!list) return;
+    list.innerHTML = '';
+    Array.from(this.files).forEach(f => {
+      const div = document.createElement('div');
+      div.className = 'note';
+      div.textContent = `${f.name} (${Math.round(f.size / 1024)} KB)`;
+      list.appendChild(div);
     });
-}
-
-// Function to dynamically calculate hours lost and total cost
-function calculateIncidentLoss() {
-  const employees =
-    parseFloat(document.getElementById("incident-employees").value) || 0;
-  const hoursPerEmployee =
-    parseFloat(document.getElementById("incident-hours-per-employee").value) ||
-    0;
-  const costPerHour =
-    parseFloat(document.getElementById("incident-cost-per-hour").value) || 0;
-
-  const totalHoursLost = employees * hoursPerEmployee;
-  const totalCost = totalHoursLost * costPerHour;
-
-  document.getElementById("incident-hours-lost").value =
-    totalHoursLost + " hours";
-  document.getElementById("incident-total-cost").value =
-    "$" + totalCost.toFixed(2);
-}
-
-// Add event listeners to recalculate whenever relevant fields change
-document
-  .getElementById("incident-employees")
-  .addEventListener("input", calculateIncidentLoss);
-document
-  .getElementById("incident-hours-per-employee")
-  .addEventListener("input", calculateIncidentLoss);
-document
-  .getElementById("incident-cost-per-hour")
-  .addEventListener("input", calculateIncidentLoss);
-
-function updateIdleTime() {
-  const reportedAt = new Date("{{ incident.reported_at.isoformat() }}");
-  const now = new Date();
-  const diffMs = now - reportedAt;
-
-  const minutes = Math.floor(diffMs / 60000);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-
-  let text = "";
-  if (days > 0) text += `${days} days `;
-  if (hours % 24 > 0) text += `${hours % 24} hours `;
-  if (minutes % 60 > 0) text += `${minutes % 60} minutes`;
-
-  document.getElementById("idleTime").innerText = text.trim();
-}
-
-updateIdleTime();
-setInterval(updateIdleTime, 60000); // update every minute
-
-// Example usage:
-fetch("/incidents/1") // fetch single incident JSON
-  .then((res) => res.json())
-  .then((data) => updateIdleTime(data.reported_at));
-
-setInterval(() => {
-  fetch("/incidents/1")
-    .then((res) => res.json())
-    .then((data) => updateIdleTime(data.reported_at));
-}, 60000); // refresh every minute
-
-// Assume `incidents` is your array of incident objects fetched from the backend
-// Example incident object:
-// { id: 1, title: "Fall in warehouse", department: "Operations", severity: "High" }
-
-// JS: Populate All Incidents table with Idle Time and action buttons
-
-//const tbody = document.getElementById("incident-table-body");
-
-// Helper: calculate idle time
-function formatIdleTime(reportedAt) {
-  if (!reportedAt) return "Unknown";
-  const reportedDate = new Date(reportedAt);
-  const now = new Date();
-  const diffMs = now - reportedDate;
-  const minutes = Math.floor(diffMs / 60000);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-  let text = "";
-  if (days > 0) text += `${days}d `;
-  if (hours % 24 > 0) text += `${hours % 24}h `;
-  if (minutes % 60 > 0) text += `${minutes % 60}m`;
-  return text.trim() || "0m";
-}
-
-// Populate the table
-function populateIncidentTable(incidents) {
-  tbody.innerHTML = "";
-  incidents.forEach((inc, index) => {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${inc.department}</td>
-            <td>${new Date(inc.incident_datetime).toLocaleDateString()}</td>
-            <td>${inc.type}</td>
-            <td>${inc.employees_affected}</td>
-            <td>${inc.hours_lost}</td>
-            <td>${inc.total_cost.toFixed(2)}</td>
-            <td>${inc.status || "Pending"}</td>
-            <td>
-                <button class="view-btn btn btn-primary" data-id="${
-                  inc.id
-                }">View</button>
-                <button class="edit-btn btn btn-warning" data-id="${
-                  inc.id
-                }">Edit</button>
-                <button class="delete-btn btn btn-danger" data-id="${
-                  inc.id
-                }">Delete</button>
-            </td>
-        `;
-    tbody.appendChild(row);
   });
 }
 
-// Event delegation
-tbody.addEventListener("click", function (e) {
-  const target = e.target;
-  const incidentId = target.dataset.id;
-  if (!incidentId) return;
+/* --------------------------------------------------------------------------
+   SEARCH (table filter)
+   -------------------------------------------------------------------------- */
 
-  if (target.classList.contains("view-btn")) {
-    window.location.href = `/incidents/${incidentId}`;
-  } else if (target.classList.contains("edit-btn")) {
-    window.location.href = `/incidents/edit/${incidentId}`;
-  } else if (target.classList.contains("delete-btn")) {
-    if (confirm("Are you sure you want to delete this incident?")) {
-      fetch(`/incidents/delete/${incidentId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          alert(data.message || "Incident deleted");
-          target.closest("tr").remove();
-        })
-        .catch((err) => console.error(err));
-    }
-  }
-});
-
-// Fetch incidents from backend (replace with your actual API)
-async function fetchIncidents() {
-  try {
-    const res = await fetch("/incidents/list"); // your Flask route returning JSON
-    const data = await res.json();
-    window.incidents = data; // make global so Idle Time refresh works
-    populateIncidentTable(data);
-  } catch (err) {
-    console.error("Error fetching incidents:", err);
-  }
-}
-
-// Initial fetch
-fetchIncidents();
-
-// Optional: refresh Idle Time every minute
-setInterval(() => {
-  if (window.incidents) populateIncidentTable(window.incidents);
-}, 60000);
-
-// JS functions for static buttons
-function viewIncident(id) {
-  window.location.href = `/incidents/${id}`;
-}
-
-function editIncident(id) {
-  window.location.href = `/incidents/edit/${id}`;
-}
-
-function deleteIncident(id) {
-  if (confirm("Are you sure you want to delete this incident?")) {
-    fetch(`/incidents/delete/${id}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        alert(data.message || "Incident deleted");
-        // Remove the row from the table
-        const btn = document.querySelector(
-          `[onclick*="deleteIncident(${id})"]`
-        );
-        if (btn) btn.closest("tr").remove();
-      })
-      .catch((err) => console.error(err));
-  }
-}
-
-const tbody = document.getElementById("incident-table-body");
-
-function populateIncidents(incidents) {
-  // Clear all rows except the first static example row if you want
-  tbody.innerHTML = "";
-
-  incidents.forEach((inc, index) => {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${inc.department}</td>
-            <td>${new Date(inc.incident_datetime).toLocaleDateString()}</td>
-            <td>${inc.type}</td>
-            <td>${inc.employees_affected}</td>
-            <td>${inc.hours_lost}</td>
-            <td>${inc.total_cost.toFixed(2)}</td>
-            <td>${inc.status || "Pending"}</td>
-            <td>
-                <button class="view-btn btn btn-primary" onclick="viewIncident(${
-                  inc.id
-                })">View</button>
-                <button class="edit-btn btn btn-warning" onclick="editIncident(${
-                  inc.id
-                })">Edit</button>
-                <button class="delete-btn btn btn-danger" onclick="deleteIncident(${
-                  inc.id
-                })">Delete</button>
-            </td>
-        `;
-    tbody.appendChild(row);
+function initSearch() {
+  document.querySelectorAll('.search-input').forEach(input => {
+    input.addEventListener('input', function () {
+      const q = this.value.toLowerCase();
+      const table = this.closest('.table-container, .form-container')?.querySelector('table');
+      if (!table) return;
+      table.querySelectorAll('tbody tr').forEach(row => {
+        row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+      });
+    });
   });
 }
 
-// calculate total cost whenever numbers change
-function calculateIncidentLoss() {
-  const employees =
-    parseFloat(document.getElementById("incident-employees")?.value) || 0;
-  const hoursPerEmployee =
-    parseFloat(document.getElementById("incident-hours-per-employee")?.value) ||
-    0;
-  const idleHours =
-    parseFloat(document.getElementById("incident-idle-hours")?.value) || 0;
-  const costPerHour =
-    parseFloat(document.getElementById("incident-cost-per-hour")?.value) || 0;
+/* --------------------------------------------------------------------------
+   EXPORT CSV
+   -------------------------------------------------------------------------- */
 
-  // total hours lost counts both direct hours and idle hours (you can adapt formula)
-  const totalHoursLost = employees * hoursPerEmployee + idleHours;
-  const totalCost = totalHoursLost * costPerHour;
-
-  const totalHoursField = document.getElementById("incident-hours-lost");
-  if (totalHoursField) totalHoursField.value = totalHoursLost + " hours";
-
-  document.getElementById("incident-total-cost").value =
-    "$" + totalCost.toFixed(2);
+function exportIncidents() {
+  const vals = Object.values(incidentData);
+  if (!vals.length) return alert('No incidents to export.');
+  const header = ['ID','Title','Department','Date','Type','Severity','Status','Investigator','Location','Description'];
+  const rows = vals.map(it => [it.id, it.title, it.department, it.date, it.type,
+    it.severity, it.status, it.investigator||'', it.location||'', it.description||'']);
+  const csv = [header, ...rows].map(r =>
+    r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')
+  ).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = `incidents_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
-// Attach listeners (call once at bottom of script.js)
-[
-  "incident-employees",
-  "incident-hours-per-employee",
-  "incident-idle-hours",
-  "incident-cost-per-hour",
-].forEach((id) => {
-  const el = document.getElementById(id);
-  if (el) el.addEventListener("input", calculateIncidentLoss);
+/* --------------------------------------------------------------------------
+   BOOT — run everything once DOM is ready
+   -------------------------------------------------------------------------- */
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Sidebar section switching
+  initSidebar();
+
+  // Tabs (scoped to each section that has them)
+  document.querySelectorAll('#audit-section, #incident-section').forEach(sec => initTabs(sec));
+
+  // Set today's date in audit date fields
+  setDefaultDates();
+
+  // Audit plan table icon clicks
+  initAuditPlanTable();
+
+  // Incident table initial render
+  refreshIncidentTable();
+
+  // File upload preview
+  initFilePreview();
+
+  // Search inputs
+  initSearch();
+
+  // Render CAPA list (stub)
+  renderCapas();
+
+  // Wire audit buttons (guard against missing elements)
+  document.getElementById('save-plan')     ?.addEventListener('click', saveAuditPlan);
+  document.getElementById('send-approval') ?.addEventListener('click', sendForApproval);
+  document.getElementById('save-audit')    ?.addEventListener('click', saveAudit);
+  document.getElementById('update-audit')  ?.addEventListener('click', updateAudit);
+
+  // Incident cost calculator
+  ['incident-employees','incident-hours-per-employee','incident-cost-per-hour'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', calculateIncidentLoss);
+  });
+
+  // Render charts if incident dashboard is the active tab on load
+  if (document.getElementById('incident-dashboard')?.classList.contains('active')) {
+    renderDashboardCharts();
+  }
 });
-
-function computeIdleHours(incidentDatetimeIso) {
-  if (!incidentDatetimeIso) return 0;
-  const reported = new Date(incidentDatetimeIso);
-  const diffMs = Date.now() - reported.getTime();
-  return Math.max(0, diffMs / (1000 * 60 * 60)); // hours (float)
-}
-
-// Update Idle Time displayed on detail page
-function updateIdleTimeUI(incidentDatetimeIso) {
-  const hours = computeIdleHours(incidentDatetimeIso);
-  const el = document.getElementById("idleTime");
-  if (el)
-    el.innerText =
-      hours >= 1
-        ? hours.toFixed(2) + " hours"
-        : Math.round(hours * 60) + " minutes";
-}
-
-// Call this when opening details (example)
-function openIncidentDetailsWithIdle(incident) {
-  // incident.incident_datetime should be ISO
-  updateIdleTimeUI(incident.incident_datetime);
-  // also update detail fields...
-  // set interval to update every minute:
-  if (window._idleInterval) clearInterval(window._idleInterval);
-  window._idleInterval = setInterval(
-    () => updateIdleTimeUI(incident.incident_datetime),
-    60000
-  );
-}
-
-function openAuditModal(auditId) {
-  // fetch audit details from backend
-  fetch(`/audits/${auditId}/json`)
-    .then((res) => res.json())
-    .then((data) => {
-      document.getElementById("auditModalTitle").innerText = `Audit: ${
-        data.title || auditId
-      }`;
-      document.getElementById("auditModalBody").innerHTML = `
-        <p><strong>Date:</strong> ${data.date || "N/A"}</p>
-        <p><strong>Type:</strong> ${data.type || "N/A"}</p>
-        <p><strong>Scope:</strong> ${data.scope || "N/A"}</p>
-        <p><strong>Auditor:</strong> ${data.auditor || "N/A"}</p>
-        <p><strong>Status:</strong> ${data.status || "N/A"}</p>
-        <p><strong>Notes:</strong><br/> ${data.notes || ""}</p>
-      `;
-      document.getElementById("auditModal").classList.remove("hidden");
-    })
-    .catch((err) => {
-      alert("Error loading audit");
-      console.error(err);
-    });
-}
-
-function closeAuditModal() {
-  document.getElementById("auditModal").classList.add("hidden");
-}
-
-icon.addEventListener("click", function () {
-  const auditId = this.dataset.auditId || /* derive id */ 1;
-  openAuditModal(auditId);
-});
-
-// Function to highlight the correct sidebar menu item
-/*function highlightSidebarMenu() {
-    const currentPage = window.location.pathname;
-    const menuItems = document.querySelectorAll('.menu li');
-    
-    // Remove active class from all menu items
-    menuItems.forEach(item => item.classList.remove('active'));
-    
-    // Determine which menu item should be active based on current content
-    const pageTitle = document.getElementById('pageTitle').textContent;
-    const breadcrumb = document.getElementById('breadcrumb').textContent;
-    
-    if (breadcrumb.includes('Audit Management') || pageTitle.includes('Audit')) {
-        // Highlight Audit Management
-        menuItems[1].classList.add('active'); // Audit Management is the second item (index 1)
-    } else if (breadcrumb.includes('Dashboard') || pageTitle.includes('Dashboard')) {
-        // Highlight Dashboard
-        menuItems[0].classList.add('active'); // Dashboard is the first item (index 0)
-    }
-    // Add more conditions for other menu items as needed
-}
-
-// Call this function when the page loads and when tabs change
-document.addEventListener('DOMContentLoaded', function() {
-    highlightSidebarMenu();
-});
-
-// Also call it when tabs are switched (add this to your tab click event)
-function initTabs() {
-    const tabs = document.querySelectorAll('.tab');
-    
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            // ... existing tab switching code ...
-            
-            // Update sidebar highlighting
-            highlightSidebarMenu();
-        });
-    });
-} */

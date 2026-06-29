@@ -22,8 +22,8 @@ def role_required(*roles):
                 flash("You must be logged in to access this page.", "warning")
                 return redirect(url_for('auth.login'))
 
-            # Check if user role is allowed
-            if current_user.role not in roles:
+            # Check if user role is allowed (case-insensitive)
+            if current_user.role.lower() not in [r.lower() for r in roles]:
                 flash("You do not have permission to access this page.", "danger")
                 return redirect(url_for('main.index'))
                 
