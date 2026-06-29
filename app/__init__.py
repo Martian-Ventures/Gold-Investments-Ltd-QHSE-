@@ -36,6 +36,9 @@ def create_app(config_class=Config):
     login.init_app(app)
     mail.init_app(app)
 
+    # Disable static file caching in development
+    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
     login.login_message_category = "info"
 
     from app.models import User, Incident, IncidentUpdate

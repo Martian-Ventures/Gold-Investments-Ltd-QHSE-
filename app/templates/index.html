@@ -18,78 +18,61 @@
 <body>
     <div class="container">
         <!-- Sidebar -->
-        <!-- Sidebar -->
-        <div
-            class="sidebar fixed inset-y-0 left-0 z-30 w-64 bg-white text-black flex flex-col shadow-xl overflow-hidden">
+        <div class="sidebar fixed inset-y-0 left-0 z-30 w-64 flex flex-col" data-active="audit-section">
 
             <div class="brand-header">
-                <div class="brand-mark" aria-hidden="true">
-                    <span class="brand-mark-inner">GCI</span>
+                <div class="brand-mark" style="background:none;box-shadow:none;padding:0;width:72px;height:72px;border-radius:18px;overflow:hidden;">
+                    <img src="{{ url_for('static', filename='images/register-bg.jpg') }}" alt="Gold Circle Investments Ltd" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">
                 </div>
                 <p class="brand-name">Gold Circle<br>Investments Ltd</p>
             </div>
 
             <!-- Navigation -->
-            <nav class="flex-1 px-3 pt-2 pb-5 overflow-y-auto">
-                <ul class="menu space-y-1.5">
-                    <li data-section="dashboard-section" class="group">
+            <nav class="flex-1 overflow-y-auto" style="padding: 12px;">
+                <ul class="menu">
+                    <li data-section="dashboard-section">
                         <a href="javascript:void(0)" class="nav-link">
+                            <i class="fas fa-gauge-high nav-icon"></i>
                             Dashboard
                         </a>
                     </li>
 
-                    <li data-section="audit-section" class="group">
+                    <li data-section="audit-section">
                         <a href="javascript:void(0)" class="nav-link">
+                            <i class="fas fa-clipboard-check nav-icon"></i>
                             Audit Management
                         </a>
                     </li>
 
-                    <li data-section="incident-section" class="group">
+                    <li data-section="incident-section">
                         <a href="javascript:void(0)" class="nav-link">
+                            <i class="fas fa-triangle-exclamation nav-icon"></i>
                             Incident Management
                         </a>
                     </li>
-
-                    <!-- Add all your other menu items in the same inactive style -->
-                    <!-- Example:
-                    <li data-section="training-section">
-                        <a href="javascript:void(0)" class="nav-link">
-                            Training & Briefings
-                        </a>
-                    </li>
-                    -->
-
-
-                    <!-- Add other items like the inactive ones above -->
-
-
-                    <!-- add other items the same way (without .active) -->
-
-
-                    <!-- Uncomment when needed -->
-                    <!--
-                    <li data-section="training-section">
-                        <a href="javascript:void(0)" class="group flex items-center gap-3 px-4 py-3 rounded-xl text-black hover:bg-gray-800/70 hover:text-white transition-all duration-200">
-                            <span class="text-xl opacity-80 group-hover:opacity-100">🎓</span>
-                            Training & Briefings
-                        </a>
-                    </li>
-        
-                    <li data-section="docs-section">
-                        <a href="javascript:void(0)" class="group flex items-center gap-3 px-4 py-3 rounded-xl text-black hover:bg-gray-800/70 hover:text-white transition-all duration-200">
-                            <span class="text-xl opacity-80 group-hover:opacity-100">📄</span>
-                            Document Management
-                        </a>
-                    </li>
-                    -->
                 </ul>
             </nav>
 
-            <!-- Optional footer / version info -->
+            <!-- Sidebar footer -->
             <div class="sidebar-footer">
-                © 2026 • Gold Circle QHSE
+                <span>© 2026 Gold Circle QHSE</span>
+                <span class="version-badge">v1.0</span>
             </div>
         </div>
+
+        <script>
+          (function() {
+            var sidebar = document.querySelector('.sidebar[data-active]');
+            if (!sidebar) return;
+            var activeSection = sidebar.getAttribute('data-active');
+            var items = sidebar.querySelectorAll('li[data-section]');
+            items.forEach(function(li) {
+              if (li.getAttribute('data-section') === activeSection) {
+                li.classList.add('active');
+              }
+            });
+          })();
+        </script>
 
         <!-- Main Content -->
         <div
@@ -98,8 +81,13 @@
             <div id="dashboard-section" class="hidden">
                 <div class="header">
                     <div class="breadcrumb">Home / Dashboard</div>
-                    <div class="user-info"><span>John Doe</span>
-                        <div class="avatar">JD</div>
+                    <div class="user-info">
+                    {% if current_user.is_authenticated %}
+                    <span>{{ current_user.full_name }}</span>
+                    <div class="avatar">{{ current_user.full_name.split()[0][0] }}{{ current_user.full_name.split()[1][0] if current_user.full_name.split()|length > 1 else "" }}</div>
+                    {% else %}
+                    <span>Guest</span><div class="avatar">G</div>
+                    {% endif %}
                     </div>
                 </div>
                 <h1 class="page-title">Dashboard</h1>
@@ -649,8 +637,13 @@
             <div id="incident-section" class="hidden">
                 <div class="header">
                     <div class="breadcrumb">Home / Incident Management</div>
-                    <div class="user-info"><span>John Doe</span>
-                        <div class="avatar">JD</div>
+                    <div class="user-info">
+                    {% if current_user.is_authenticated %}
+                    <span>{{ current_user.full_name }}</span>
+                    <div class="avatar">{{ current_user.full_name.split()[0][0] }}{{ current_user.full_name.split()[1][0] if current_user.full_name.split()|length > 1 else "" }}</div>
+                    {% else %}
+                    <span>Guest</span><div class="avatar">G</div>
+                    {% endif %}
                     </div>
                 </div>
 
@@ -1128,8 +1121,13 @@
             <div id="docs-section" class="hidden">
                 <div class="header">
                     <div class="breadcrumb">Home / Document Management</div>
-                    <div class="user-info"><span>John Doe</span>
-                        <div class="avatar">JD</div>
+                    <div class="user-info">
+                    {% if current_user.is_authenticated %}
+                    <span>{{ current_user.full_name }}</span>
+                    <div class="avatar">{{ current_user.full_name.split()[0][0] }}{{ current_user.full_name.split()[1][0] if current_user.full_name.split()|length > 1 else "" }}</div>
+                    {% else %}
+                    <span>Guest</span><div class="avatar">G</div>
+                    {% endif %}
                     </div>
                 </div>
                 <h1 class="page-title">Document Management</h1>
@@ -1147,8 +1145,13 @@
             <div id="training-section" class="hidden">
                 <div class="header">
                     <div class="breadcrumb">Home / Training & Briefings</div>
-                    <div class="user-info"><span>John Doe</span>
-                        <div class="avatar">JD</div>
+                    <div class="user-info">
+                    {% if current_user.is_authenticated %}
+                    <span>{{ current_user.full_name }}</span>
+                    <div class="avatar">{{ current_user.full_name.split()[0][0] }}{{ current_user.full_name.split()[1][0] if current_user.full_name.split()|length > 1 else "" }}</div>
+                    {% else %}
+                    <span>Guest</span><div class="avatar">G</div>
+                    {% endif %}
                     </div>
                 </div>
                 <h1 class="page-title">Training & Safety Briefings</h1>

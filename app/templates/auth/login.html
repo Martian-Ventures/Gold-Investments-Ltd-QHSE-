@@ -1,65 +1,87 @@
 {% extends "base.html" %}
 
-{% block navbar %}{% endblock %}
-
 {% block title %}Login | Gold Circle Investments Ltd{% endblock %}
 
 {% block body_class %}{% endblock %}
+
+{% block navbar %}{% endblock %}
 
 {% block background %}
 <div class="auth-page-bg"></div>
 {% endblock %}
 
+{% block main_class %}relative z-10 flex items-center justify-center min-h-screen px-4 py-8{% endblock %}
+
 {% block content %}
-<div class="w-full max-w-md animate-fade-in">
+<div class="w-full animate-fade-in" style="max-width:28rem;">
   <div class="auth-card">
-  <div class="auth-card-header">
-    <h2 class="auth-title">Welcome Back</h2>
-    <p class="auth-subtitle">
-      Sign in to Gold Circle Investments Ltd QHSE platform.
+
+    <!-- GCI Logo Mark & Brand -->
+    <div class="auth-card-header">
+      <div class="auth-logo-mark" style="background:none;box-shadow:none;padding:0;overflow:hidden;">
+        <img src="{{ url_for('static', filename='images/register-bg.jpg') }}" alt="Gold Circle Investments Ltd" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">
+      </div>
+      <p class="auth-company-name">Gold Circle Investments Ltd</p>
+      <p class="auth-platform-tag">QHSE Platform</p>
+      <h1 class="auth-title">Welcome Back</h1>
+      <p class="auth-subtitle">Sign in to your account to continue.</p>
+    </div>
+
+    <!-- Login Form -->
+    <form method="POST" action="{{ url_for('auth.login') }}" novalidate>
+      {{ form.hidden_tag() }}
+
+      <!-- Email -->
+      <div class="auth-form-group">
+        {{ form.email.label(class="auth-label") }}
+        {{ form.email(class="auth-input", placeholder="you@goldcircle.com", autocomplete="email") }}
+        {% if form.email.errors %}
+        <p class="auth-error">{{ form.email.errors[0] }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Password -->
+      <div class="auth-form-group">
+        {{ form.password.label(class="auth-label") }}
+        {{ form.password(class="auth-input", placeholder="••••••••", autocomplete="current-password") }}
+        {% if form.password.errors %}
+        <p class="auth-error">{{ form.password.errors[0] }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Remember me + Forgot password -->
+      {% if form.remember_me %}
+      <div class="auth-row">
+        <label class="auth-remember">
+          {{ form.remember_me(class="") }}
+          <span>Remember me</span>
+        </label>
+        <a href="{{ url_for('auth.reset_password_request') }}" class="auth-forgot">
+          Forgot password?
+        </a>
+      </div>
+      {% else %}
+      <div style="text-align:right; margin-bottom: 16px;">
+        <a href="{{ url_for('auth.reset_password_request') }}" class="auth-forgot">
+          Forgot password?
+        </a>
+      </div>
+      {% endif %}
+
+      <!-- Submit -->
+      <div>
+        <button type="submit" class="auth-btn">
+          <i class="fas fa-sign-in-alt" style="margin-right:8px;"></i>Sign In
+        </button>
+      </div>
+    </form>
+
+    <!-- Register link -->
+    <p class="auth-footer">
+      Don't have an account?
+      <a href="{{ url_for('auth.register') }}" class="auth-link">Register here</a>
     </p>
-  </div>
 
-  <form method="POST" action="{{ url_for('auth.login') }}" class="space-y-4">
-    {{ form.hidden_tag() }}
-
-    <div class="auth-form-group">
-      {{ form.email.label(class="auth-label") }}
-      {{ form.email(class="auth-input") }}
-      {% if form.email.errors %}
-      <p class="auth-error">{{ form.email.errors[0] }}</p>
-      {% endif %}
-    </div>
-
-    <div class="auth-form-group">
-      {{ form.password.label(class="auth-label") }}
-      {{ form.password(class="auth-input") }}
-      {% if form.password.errors %}
-      <p class="auth-error">{{ form.password.errors[0] }}</p>
-      {% endif %}
-    </div>
-
-    {% if form.remember_me %}
-    <div class="flex items-center justify-between">
-      <label class="flex items-center space-x-2 text-sm text-[#4B5563]">
-        {{ form.remember_me(class="h-4 w-4 rounded border-gray-300 text-orange focus:ring-gold") }}
-        <span>Remember me</span>
-      </label>
-      <a href="{{ url_for('auth.reset_password_request') }}" class="auth-link text-sm">
-        Forgot password?
-      </a>
-    </div>
-    {% endif %}
-
-    <div>
-      <button type="submit" class="auth-btn">Login</button>
-    </div>
-  </form>
-
-  <p class="auth-footer">
-    Don't have an account?
-    <a href="{{ url_for('auth.register') }}" class="auth-link">Register here</a>
-  </p>
   </div>
 </div>
 {% endblock %}

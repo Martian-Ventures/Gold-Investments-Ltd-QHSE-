@@ -1,69 +1,95 @@
 {% extends "base.html" %}
 
-{% block navbar %}{% endblock %}
-
 {% block title %}Register | Gold Circle Investments Ltd{% endblock %}
 
 {% block body_class %}{% endblock %}
+
+{% block navbar %}{% endblock %}
 
 {% block background %}
 <div class="auth-page-bg"></div>
 {% endblock %}
 
+{% block main_class %}relative z-10 flex items-center justify-center min-h-screen px-4 py-8{% endblock %}
+
 {% block content %}
-<div class="w-full max-w-md animate-fade-in">
+<div class="w-full animate-fade-in" style="max-width:28rem;">
   <div class="auth-card">
-  <div class="auth-card-header">
-    <h2 class="auth-title">Create Your Account</h2>
-    <p class="auth-subtitle">
-      Join Gold Circle Investments Ltd and manage QHSE with confidence.
+
+    <!-- GCI Logo Mark & Brand -->
+    <div class="auth-card-header">
+      <div class="auth-logo-mark" style="background:none;box-shadow:none;padding:0;overflow:hidden;">
+        <img src="{{ url_for('static', filename='images/register-bg.jpg') }}" alt="Gold Circle Investments Ltd" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">
+      </div>
+      <p class="auth-company-name">Gold Circle Investments Ltd</p>
+      <p class="auth-platform-tag">QHSE Platform</p>
+      <h1 class="auth-title">Create Your Account</h1>
+      <p class="auth-subtitle">Join Gold Circle Investments Ltd QHSE</p>
+    </div>
+
+    <!-- Registration Form -->
+    <form method="POST" action="{{ url_for('auth.register') }}" novalidate>
+      {{ form.hidden_tag() }}
+
+      <!-- Full Name -->
+      <div class="auth-form-group">
+        {{ form.full_name.label(class="auth-label") }}
+        {{ form.full_name(class="auth-input", placeholder="John Doe", autocomplete="name") }}
+        {% if form.full_name.errors %}
+        <p class="auth-error">{{ form.full_name.errors[0] }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Email -->
+      <div class="auth-form-group">
+        {{ form.email.label(class="auth-label") }}
+        {{ form.email(class="auth-input", placeholder="you@goldcircle.com", autocomplete="email") }}
+        {% if form.email.errors %}
+        <p class="auth-error">{{ form.email.errors[0] }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Password -->
+      <div class="auth-form-group">
+        {{ form.password.label(class="auth-label") }}
+        {{ form.password(class="auth-input", placeholder="••••••••", autocomplete="new-password") }}
+        {% if form.password.errors %}
+        <p class="auth-error">{{ form.password.errors[0] }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Confirm Password -->
+      <div class="auth-form-group">
+        {{ form.password2.label(class="auth-label") }}
+        {{ form.password2(class="auth-input", placeholder="••••••••", autocomplete="new-password") }}
+        {% if form.password2.errors %}
+        <p class="auth-error">{{ form.password2.errors[0] }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Role field (if present in form) -->
+      {% if form.role is defined %}
+      <div class="auth-form-group">
+        {{ form.role.label(class="auth-label") }}
+        {{ form.role(class="auth-input") }}
+        {% if form.role.errors %}
+        <p class="auth-error">{{ form.role.errors[0] }}</p>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Submit -->
+      <div>
+        {{ form.submit(class="auth-btn") }}
+      </div>
+    </form>
+
+    <!-- Login link -->
+    <p class="auth-footer">
+      Already have an account?
+      <a href="{{ url_for('auth.login') }}" class="auth-link">Login here</a>
     </p>
-  </div>
 
-  <form method="POST" action="{{ url_for('auth.register') }}" class="space-y-4">
-    {{ form.hidden_tag() }}
-
-    <div class="auth-form-group">
-      {{ form.full_name.label(class="auth-label") }}
-      {{ form.full_name(class="auth-input") }}
-      {% if form.full_name.errors %}
-      <p class="auth-error">{{ form.full_name.errors[0] }}</p>
-      {% endif %}
-    </div>
-
-    <div class="auth-form-group">
-      {{ form.email.label(class="auth-label") }}
-      {{ form.email(class="auth-input") }}
-      {% if form.email.errors %}
-      <p class="auth-error">{{ form.email.errors[0] }}</p>
-      {% endif %}
-    </div>
-
-    <div class="auth-form-group">
-      {{ form.password.label(class="auth-label") }}
-      {{ form.password(class="auth-input") }}
-      {% if form.password.errors %}
-      <p class="auth-error">{{ form.password.errors[0] }}</p>
-      {% endif %}
-    </div>
-
-    <div class="auth-form-group">
-      {{ form.password2.label(class="auth-label") }}
-      {{ form.password2(class="auth-input") }}
-      {% if form.password2.errors %}
-      <p class="auth-error">{{ form.password2.errors[0] }}</p>
-      {% endif %}
-    </div>
-
-    <div>
-      {{ form.submit(class="auth-btn") }}
-    </div>
-  </form>
-
-  <p class="auth-footer">
-    Already have an account?
-    <a href="{{ url_for('auth.login') }}" class="auth-link">Login here</a>
-  </p>
   </div>
 </div>
 {% endblock %}
