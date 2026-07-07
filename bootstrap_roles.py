@@ -19,8 +19,8 @@ with app.app_context():
     db.session.commit()
 
     # Optional: create default admin
-    if not User.query.filter_by(username="admin").first():
-        u = User(username="admin", email="admin@example.com")
+    if not User.query.filter_by(email="admin@example.com").first():
+        u = User(full_name="Administrator", email="admin@example.com")
         u.set_password("ChangeMe123!")  # make sure set_password exists in User model
         admin_role = Role.query.filter_by(name="Admin").first()
         u.roles.append(admin_role)

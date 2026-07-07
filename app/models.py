@@ -13,17 +13,18 @@ user_roles = db.Table(
     db.Column("role_id", db.Integer, db.ForeignKey("roles.id"), primary_key=True),
 )
 
+
 class User(UserMixin, db.Model):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
-    full_name = db.Column(db.String(120), unique=True,  nullable=False)
+    full_name = db.Column(db.String(120), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     role = db.Column(db.Enum("admin", "auditor", "employee", name="role_enum"), nullable=False, default="employee")
     roles = db.relationship("Role", secondary=user_roles, backref=db.backref("users", lazy="dynamic"))
-    is_active = db.Column(db.Boolean, default=True)     # email confirmed
-    twofa_secret = db.Column(db.String(32), nullable=True) # optional TOTP secret
+    is_active = db.Column(db.Boolean, default=True)  # email confirmed
+    twofa_secret = db.Column(db.String(32), nullable=True)  # optional TOTP secret
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -55,18 +56,22 @@ class User(UserMixin, db.Model):
             return None
         return User.query.get(data.get('user_id'))
     
-    # relationships
-    incidents = db.relationship(
+    # ✅ CORRECTED RELATIONSHIPS
+    # Incidents this user created
+    created_incidents = db.relationship(
         "Incident",
+        foreign_keys='Incident.created_by_id',
         back_populates="created_by",
-        overlaps="assigned_incidents,investigator"
+        lazy='dynamic'
     )
-    assigned_incidents = db.relationship(
+    
+    # Incidents this user is investigating
+    investigating_incidents = db.relationship(
         "Incident",
+        foreign_keys='Incident.investigator_id',
         back_populates="investigator",
-        overlaps="incidents,created_by"
+        lazy='dynamic'
     )
-
 
 
 class Role(db.Model):
@@ -77,7 +82,8 @@ class Role(db.Model):
 
     def __repr__(self):
         return f"<Role {self.name}>"
-    
+
+
 class Incident(db.Model):
     __tablename__ = "incidents"
 
@@ -98,27 +104,30 @@ class Incident(db.Model):
     hours_lost = db.Column(db.Float, nullable=False, default=0.0)
     cost_per_hour = db.Column(db.Float, nullable=False, default=0.0)
     total_cost = db.Column(db.Float, nullable=False, default=0.0)
-    investigator_id = db.Column(db.Integer, db.ForeignKey("user.id"))
-    investigator = db.relationship(
-        "User",
-        back_populates="assigned_incidents",
-        overlaps="incidents,created_by"
-    )
+    
+    # Foreign keys
+    investigator_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    created_by_id = db.Column(db.Integer, db.ForeignKey("users.id"))
 
     # Date & user tracking
     incident_datetime = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     reported_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
-    created_by_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    # ✅ CORRECTED RELATIONSHIPS
+    investigator = db.relationship(
+        "User",
+        foreign_keys=[investigator_id],
+        back_populates="investigating_incidents"
+    )
+    
     created_by = db.relationship(
         "User",
-        back_populates="incidents",
-        overlaps="assigned_incidents,investigator"
+        foreign_keys=[created_by_id],
+        back_populates="created_incidents"
     )
 
-    status = db.Column(db.String(32), default="Reported")
-    # Reported, Under Investigation, Resolved, Closed
+    status = db.Column(db.String(32), default="Reported")  # Reported, Under Investigation, Resolved, Closed
 
     # Auto calculation before saving
     def calculate_totals(self):
@@ -142,11 +151,10 @@ class Incident(db.Model):
             "total_cost": self.total_cost,
             "incident_datetime": self.incident_datetime.isoformat() if self.incident_datetime else None,
             "status": self.status,
-            "created_by": self.created_by.username if self.created_by else None,
+            "created_by": self.created_by.full_name if self.created_by else None,
             "created_at": self.created_at.isoformat(),
         }
     
-        
     @property
     def idle_timedelta(self):
         # returns a datetime.timedelta
@@ -175,8 +183,8 @@ class Incident(db.Model):
             return f"{round(seconds / 3600, 1)} hours"
         days = int(seconds // 86400)
         return f"{days} days"
-    
-        
+
+
 class IncidentUpdate(db.Model):
     __tablename__ = "incident_updates"
     id = db.Column(db.Integer, primary_key=True)
@@ -186,9 +194,11 @@ class IncidentUpdate(db.Model):
     updated_by_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     updated_by = db.relationship("User", backref=db.backref("incident_updates", lazy=True))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
     def __repr__(self):
         return f"<IncidentUpdate {self.id} for Incident {self.incident_id}>"
-    
+
+
 class Capa(db.Model):
     __tablename__ = "capas"
     id = db.Column(db.Integer, primary_key=True)
@@ -200,14 +210,16 @@ class Capa(db.Model):
     status = db.Column(db.String(64), default="Open")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+
 class Document(db.Model):
     __tablename__ = "documents"
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255))
     filename = db.Column(db.String(255))
     uploaded_by_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    uploaded_by = db.relationship("User")
+    uploaded_by = db.relationship("User", backref=db.backref("documents", lazy=True))
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 
 class Audit(db.Model):
     __tablename__ = "audits"
@@ -216,13 +228,14 @@ class Audit(db.Model):
     standard = db.Column(db.String(255))
     plan_date = db.Column(db.Date)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-@login.user_loader
-def load_user(user_id):
-    print(f"🔍 Loading user with ID: {user_id}")  # Debug
-    return User.query.get(int(user_id))
-    print(f"🔍 User loaded: {user}")  # Debug
-    return user
 
 
-
+class AdminLog(db.Model):
+    __tablename__ = "admin_logs"
+    id = db.Column(db.Integer, primary_key=True)
+    actor_id = db.Column(db.Integer, nullable=True)
+    actor_email = db.Column(db.String(120), nullable=True)
+    action = db.Column(db.String(64), nullable=False)
+    target = db.Column(db.String(120), nullable=True)
+    detail = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

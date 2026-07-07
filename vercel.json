@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "run.py",
+      "src": "app/__init.py__",
       "use": "@vercel/python"
     },
     {
@@ -19,5 +19,12 @@
       "src": "/(.*)",
       "dest": "run.py"
     }
-  ]
+  ],
+  "env": {
+    "PGHOST": "@pghost",
+    "PGUSER": "@pguser",
+    "PGPASSWORD": "@pgpassword",
+    "PGDATABASE": "@pgdatabase",
+    "PGPORT": "@pgport"
+  }
 }

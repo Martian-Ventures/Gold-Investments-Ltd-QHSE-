@@ -2,9 +2,7 @@ from flask import Blueprint, render_template, request, redirect, session, url_fo
 from flask_login import current_user, login_required
 from app import db
 from app.auth.routes import roles_required
-from app.models import User, Role
-from app.decorators import role_required
-from app.models import Audit
+from app.models import User, Role, AdminLog
 
 admin_bp = Blueprint("admin", __name__, template_folder="../templates")
 
@@ -20,13 +18,6 @@ def admin_dashboard():
 @roles_required("admin")
 def list_users():
     users = User.query.order_by(User.created_at.desc()).all()
-    return render_template("admin_users.html", users=users)
-
-@admin_bp.route("/users")
-@login_required
-@roles_required("admin")
-def manage_users():
-    users = User.query.all()
     roles = Role.query.all()
     return render_template("admin_users.html", users=users, roles=roles)
 
@@ -44,17 +35,18 @@ def create_user():
             return redirect(url_for("admin.create_user"))
             
 
-        u = User(email=email, role=role)
+        full_name = request.form.get("full_name") or email.split("@")[0].title()
+        u = User(full_name=full_name, email=email, role=role)
         u.set_password(password or "ChangeMe123!")
         db.session.add(u)
         db.session.commit()
-        db.session.add(Audit(actor_id=current_user.id, actor_email=current_user.email, action="create_user", target=email, detail=f"role={role}"))
+        db.session.add(AdminLog(actor_id=current_user.id, actor_email=current_user.email, action="create_user", target=email, detail=f"role={role}"))
         db.session.commit()
         flash("User created", "success")
         return redirect(url_for("admin.list_users"))
         
 
-    return render_template("admin_user_create.html")
+    return redirect(url_for("admin.list_users"))
 
 # Edit user (role or password)
 @admin_bp.route("/users/<int:user_id>/edit", methods=["GET","POST"])
@@ -63,14 +55,21 @@ def create_user():
 def edit_user(user_id):
     user = User.query.get_or_404(user_id)
     if request.method == "POST":
+        new_full_name = request.form.get("full_name")
         new_role = request.form.get("role")
         new_password = request.form.get("password")
+        new_is_active = request.form.get("is_active") == "true"
+        
         old_role = user.role
         user.role = new_role
+        if new_full_name:
+            user.full_name = new_full_name
+        user.is_active = new_is_active
+        
         if new_password:
             user.set_password(new_password)
         db.session.commit()
-        db.session.add(Audit(actor_id=current_user.id, actor_email=current_user.email, action="edit_user", target=user.email, detail=f"{old_role}=>{new_role}"))
+        db.session.add(AdminLog(actor_id=current_user.id, actor_email=current_user.email, action="edit_user", target=user.email, detail=f"{old_role}=>{new_role}"))
         db.session.commit()
         flash("User updated", "success")
         
@@ -85,7 +84,7 @@ def delete_user(user_id):
     user = User.query.get_or_404(user_id)
     db.session.delete(user)
     db.session.commit()
-    db.session.add(Audit(actor_id=current_user.id, actor_email=current_user.email, action="delete_user", target=user.email))
+    db.session.add(AdminLog(actor_id=current_user.id, actor_email=current_user.email, action="delete_user", target=user.email))
     db.session.commit()
     flash("User deleted", "success")
     return redirect(url_for("admin.list_users"))
@@ -93,7 +92,7 @@ def delete_user(user_id):
 
 
 @admin_bp.route("/users/<int:user_id>/assign", methods=["POST"])
-@role_required("Admin")
+@roles_required("admin")
 def assign_role(user_id):
     user = User.query.get_or_404(user_id)
     role_id = request.form.get("role_id")
@@ -103,4 +102,4 @@ def assign_role(user_id):
         db.session.commit()
         flash(f"Assigned role {role.name} to {user.full_name}", "success")
         
-    return redirect(url_for("admin.manage_users"))
+    return redirect(url_for("admin.list_users"))

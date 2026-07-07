@@ -65,12 +65,20 @@ def register():
         confirm_url = url_for('auth.confirm_email', token=token, _external=True)
 
         # Send confirmation email
-        msg = Message('Confirm your account', recipients=[user.email])
-        msg.body = f'Please confirm your account by clicking the link: {confirm_url}'
-        mail.send(msg)
+        try:
+            msg = Message('Confirm your account', recipients=[user.email])
+            msg.body = f'Please confirm your account by clicking the link: {confirm_url}'
+            mail.send(msg)
+            flash('Registration successful! Check your email to confirm your account.', 'success')
+        except Exception as e:
+            # Fallback for development if email credentials aren't configured
+            print(f"\n📧 [DEVELOPMENT MODE] Email could not be sent: {e}")
+            print(f"🔗 Confirmation Link: {confirm_url}\n")
+            # Auto-confirm in development
+            user.is_active = True
+            db.session.commit()
+            flash('Registration successful! (Development Mode: Account auto-activated, confirmation link printed to console).', 'success')
 
-        # Flash success message and redirect to login
-        flash('Registration successful! Check your email to confirm your account.', 'success')
         return redirect(url_for('auth.login'))
 
     return render_template('auth/register.html', form=form)
@@ -165,9 +173,16 @@ def reset_password_request():
         if user:
             token = user.get_token(purpose='reset')
             reset_url = url_for('auth.reset_password', token=token, _external=True)
-            msg = Message('Password Reset', recipients=[user.email])
-            msg.body = f'Reset your password: {reset_url}'
-            mail.send(msg)
+            try:
+                msg = Message('Password Reset', recipients=[user.email])
+                msg.body = f'Reset your password: {reset_url}'
+                mail.send(msg)
+            except Exception as e:
+                # Fallback for development
+                print(f"\n📧 [DEVELOPMENT MODE] Reset email could not be sent: {e}")
+                print(f"🔗 Reset Link: {reset_url}\n")
+                flash(f'If an account with that email exists, we sent a reset email. (Development Mode: Link printed to console: {reset_url})', 'info')
+                return redirect(url_for('auth.login'))
         
         flash('If an account with that email exists, we sent a reset email.', 'info')
         return redirect(url_for('auth.login'))

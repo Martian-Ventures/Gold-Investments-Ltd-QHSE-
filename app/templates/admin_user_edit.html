@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Edit User — Gold Circle{% endblock %}
+{% block main_class %}relative z-10 min-h-screen w-full{% endblock %}
+
+{% block content %}
+<div class="container flex justify-center items-center min-h-screen w-full">
+    <div class="form-container" style="max-width: 520px; width: 100%; margin: 24px auto;">
+        <div class="form-header">
+            <h3>Edit User: {{ user.full_name }}</h3>
+            <a href="{{ url_for('admin.list_users') }}" class="btn btn-ghost btn-small">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+
+        <form action="{{ url_for('admin.edit_user', user_id=user.id) }}" method="POST">
+            <div class="form-group">
+                <label for="full_name">Full Name</label>
+                <input type="text" name="full_name" id="full_name" value="{{ user.full_name }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" name="email" id="email" value="{{ user.email }}" required readonly>
+                <div class="note">Email addresses cannot be changed for safety audits.</div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="role">Default Role (Base Enum)</label>
+                    <select name="role" id="role">
+                        <option value="employee" {% if user.role=='employee' %}selected{% endif %}>Employee</option>
+                        <option value="auditor" {% if user.role=='auditor' %}selected{% endif %}>Auditor</option>
+                        <option value="admin" {% if user.role=='admin' %}selected{% endif %}>Admin</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="is_active">Status</label>
+                    <select name="is_active" id="is_active">
+                        <option value="true" {% if user.is_active %}selected{% endif %}>Active</option>
+                        <option value="false" {% if not user.is_active %}selected{% endif %}>Suspended / Inactive
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 12px;">
+                <label for="password">Reset Password</label>
+                <input type="password" name="password" id="password" placeholder="Leave blank to keep current password">
+            </div>
+
+            <div class="form-actions" style="margin-top: 24px; padding-top: 16px;">
+                <a href="{{ url_for('admin.list_users') }}" class="btn btn-ghost">Cancel</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
