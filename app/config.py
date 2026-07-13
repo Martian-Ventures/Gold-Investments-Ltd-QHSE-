@@ -7,22 +7,6 @@ load_dotenv()
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-me')
     
-    # PostgreSQL Database Configuration
-    # Priority: Vercel Env Vars → DATABASE_URL → Local PostgreSQL
-    if os.environ.get('VERCEL'):
-        # Vercel Postgres (production)
-        raw_url = os.environ.get('POSTGRES_URL') or os.environ.get('DATABASE_URL')
-        if raw_url and raw_url.startswith("postgres://"):
-            raw_url = raw_url.replace("postgres://", "postgresql://", 1)
-    else:
-        # Use DATABASE_URL if provided, otherwise fallback to local PostgreSQL
-        SQLALCHEMY_DATABASE_URI = os.environ.get(
-            'DATABASE_URL', 
-            'postgresql://neondb_owner:npg_08JdFQcqtzEu@ep-floral-sunset-atna7psk-pooler.c-9.us-east-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require'  # Default local PostgreSQL
-        )
-    
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-    
     # Flask-Mail
     MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
     MAIL_PORT = int(os.environ.get('MAIL_PORT', 587))
@@ -45,18 +29,35 @@ class Config:
     REMEMBER_COOKIE_SECURE = os.environ.get('REMEMBER_COOKIE_SECURE', 'false').lower() in ['1', 'true', 'yes']
     REMEMBER_COOKIE_HTTPONLY = True
     REMEMBER_COOKIE_SAMESITE = 'Lax'
+    
+    # Database configuration - moved to base class with proper handling
+    @staticmethod
+    def get_database_uri():
+        """Get database URI with proper PostgreSQL URL handling"""
+        # Check for Vercel environment
+        if os.environ.get('VERCEL'):
+            raw_url = os.environ.get('POSTGRES_URL') or os.environ.get('DATABASE_URL')
+            if raw_url:
+                # Replace postgres:// with postgresql:// for SQLAlchemy
+                if raw_url.startswith("postgres://"):
+                    return raw_url.replace("postgres://", "postgresql://", 1)
+                return raw_url
+        
+        # Default: use DATABASE_URL from environment
+        return os.environ.get('DATABASE_URL')
 
 class DevelopmentConfig(Config):
     """Development configuration"""
     DEBUG = True
     ENV = 'development'
     
-    # Use local PostgreSQL
+    # Use DATABASE_URL from environment, with a sensible default
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         'DATABASE_URL',
-        'postgresql://neondb_owner:npg_08JdFQcqtzEu@ep-floral-sunset-atna7psk-pooler.c-9.us-east-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require'
+        'postgresql://neondb_owner:npg_08JdFQcqtzEu@ep-floral-sunset-atna7psk-pooler.c-9.us-east-1.aws.neon.tech/neondb'
     )
     SQLALCHEMY_ECHO = True  # Log SQL queries
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 class ProductionConfig(Config):
     """Production configuration"""
@@ -68,19 +69,29 @@ class ProductionConfig(Config):
     SESSION_COOKIE_SECURE = True
     REMEMBER_COOKIE_SECURE = True
     
-    # Production database should come from environment variables
+    # Production database MUST come from environment variables
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # Validate that database URL is set in production
+    if not SQLALCHEMY_DATABASE_URI:
+        raise ValueError("DATABASE_URL must be set in production environment")
 
 class TestingConfig(Config):
-    """Testing configuration running against local PostgreSQL"""
+    """Testing configuration"""
     TESTING = True
     DEBUG = True
     ENV = 'testing'
     
-    # Switch from SQLite to your active local PostgreSQL instance
-    SQLALCHEMY_DATABASE_URI = 'postgresql://neondb_owner:npg_08JdFQcqtzEu@ep-floral-sunset-atna7psk-pooler.c-9.us-east-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require'
+    # Use a test database
+    SQLALCHEMY_DATABASE_URI = os.environ.get(
+        'TEST_DATABASE_URL',
+        'postgresql://neondb_owner:npg_08JdFQcqtzEu@ep-floral-sunset-atna7psk-pooler.c-9.us-east-1.aws.neon.tech/neondb_test'
+    )
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ECHO = False
     
-    # Disable CSRF tokens during testing so your API/Form tests can submit requests smoothly
+    # Disable CSRF tokens during testing
     WTF_CSRF_ENABLED = False
 
 # Configuration dictionary for easy switching
