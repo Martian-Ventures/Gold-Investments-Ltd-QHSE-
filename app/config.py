@@ -11,10 +11,9 @@ class Config:
     # Priority: Vercel Env Vars → DATABASE_URL → Local PostgreSQL
     if os.environ.get('VERCEL'):
         # Vercel Postgres (production)
-        SQLALCHEMY_DATABASE_URI = (
-            f"postgresql://{os.environ.get('PGUSER')}:{os.environ.get('PGPASSWORD')}"
-            f"@{os.environ.get('PGHOST')}:{os.environ.get('PGPORT')}/{os.environ.get('PGDATABASE')}"
-        )
+        raw_url = os.environ.get('POSTGRES_URL') or os.environ.get('DATABASE_URL')
+        if raw_url and raw_url.startswith("postgres://"):
+            raw_url = raw_url.replace("postgres://", "postgresql://", 1)
     else:
         # Use DATABASE_URL if provided, otherwise fallback to local PostgreSQL
         SQLALCHEMY_DATABASE_URI = os.environ.get(
