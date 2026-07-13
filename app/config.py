@@ -19,7 +19,7 @@ class Config:
         # Use DATABASE_URL if provided, otherwise fallback to local PostgreSQL
         SQLALCHEMY_DATABASE_URI = os.environ.get(
             'DATABASE_URL', 
-            'postgresql://postgres:123@localhost:5433/qhse_db'  # Default local PostgreSQL
+            'postgresql://neondb_owner:npg_08JdFQcqtzEu@ep-floral-sunset-atna7psk-pooler.c-9.us-east-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require'  # Default local PostgreSQL
         )
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -55,7 +55,7 @@ class DevelopmentConfig(Config):
     # Use local PostgreSQL
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         'DATABASE_URL',
-        'postgresql://postgres:123@localhost:5433/qhse_db'
+        'postgresql://neondb_owner:npg_08JdFQcqtzEu@ep-floral-sunset-atna7psk-pooler.c-9.us-east-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require'
     )
     SQLALCHEMY_ECHO = True  # Log SQL queries
 
@@ -79,7 +79,7 @@ class TestingConfig(Config):
     ENV = 'testing'
     
     # Switch from SQLite to your active local PostgreSQL instance
-    SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:123@localhost:5433/qhse_db'
+    SQLALCHEMY_DATABASE_URI = 'postgresql://neondb_owner:npg_08JdFQcqtzEu@ep-floral-sunset-atna7psk-pooler.c-9.us-east-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require'
     
     # Disable CSRF tokens during testing so your API/Form tests can submit requests smoothly
     WTF_CSRF_ENABLED = False
