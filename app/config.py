@@ -1,6 +1,7 @@
 from datetime import timedelta
 import os
 from dotenv import load_dotenv
+from urllib.parse import quote_plus
 
 load_dotenv()
 
@@ -33,18 +34,22 @@ class Config:
     # Database configuration - moved to base class with proper handling
     @staticmethod
     def get_database_uri():
-        """Get database URI with proper PostgreSQL URL handling"""
-        # Check for Vercel environment
-        if os.environ.get('VERCEL'):
-            raw_url = os.environ.get('POSTGRES_URL') or os.environ.get('DATABASE_URL')
-            if raw_url:
-                # Replace postgres:// with postgresql:// for SQLAlchemy
-                if raw_url.startswith("postgres://"):
-                    return raw_url.replace("postgres://", "postgresql://", 1)
-                return raw_url
-        
-        # Default: use DATABASE_URL from environment
-        return os.environ.get('DATABASE_URL')
+        """Return a SQLAlchemy-compatible database URL from supported env vars."""
+        raw_url = os.environ.get('POSTGRES_URL') or os.environ.get('DATABASE_URL')
+
+        if not raw_url:
+            required_vars = ('PGUSER', 'PGPASSWORD', 'PGHOST', 'PGDATABASE')
+            if all(os.environ.get(name) for name in required_vars):
+                user = quote_plus(os.environ['PGUSER'])
+                password = quote_plus(os.environ['PGPASSWORD'])
+                host = os.environ['PGHOST']
+                port = os.environ.get('PGPORT', '5432')
+                database = quote_plus(os.environ['PGDATABASE'])
+                raw_url = f'postgresql://{user}:{password}@{host}:{port}/{database}'
+
+        if raw_url and raw_url.startswith('postgres://'):
+            return raw_url.replace('postgres://', 'postgresql://', 1)
+        return raw_url
 
 class DevelopmentConfig(Config):
     """Development configuration"""
@@ -70,12 +75,8 @@ class ProductionConfig(Config):
     REMEMBER_COOKIE_SECURE = True
     
     # Production database MUST come from environment variables
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    SQLALCHEMY_DATABASE_URI = Config.get_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    
-    # Validate that database URL is set in production
-    if not SQLALCHEMY_DATABASE_URI:
-        raise ValueError("DATABASE_URL must be set in production environment")
 
 class TestingConfig(Config):
     """Testing configuration"""

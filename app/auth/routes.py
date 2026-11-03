@@ -1,6 +1,9 @@
-from flask import Blueprint, get_flashed_messages, render_template, redirect, session, url_for, flash, request
+from flask import Blueprint, current_app, get_flashed_messages, jsonify, render_template, redirect, session, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_mail import Message
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from werkzeug.datastructures import MultiDict
+from werkzeug.exceptions import BadRequest
 from .. import db, mail
 from ..models import User, Role
 from .forms import RegisterForm, LoginForm, RequestResetForm, ResetPasswordForm
@@ -30,57 +33,92 @@ def load_user(user_id):
 def register():
     # Clear any leftover flash messages
     get_flashed_messages()
+    is_json_request = request.is_json
 
     # Redirect already logged-in users to dashboard
     if current_user.is_authenticated:
         logout_user()  # force logout
         return redirect(url_for('auth.login'))
 
-    form = RegisterForm()
+    if is_json_request:
+        try:
+            payload = request.get_json()
+        except BadRequest:
+            return jsonify(error='Request body must contain valid JSON.'), 400
+        if not isinstance(payload, dict):
+            return jsonify(error='Request body must be a JSON object.'), 400
+        form_fields = ('full_name', 'email', 'password', 'password2', 'role')
+        if any(key in payload and not isinstance(payload[key], str) for key in form_fields):
+            return jsonify(error='Registration fields must be strings.'), 400
+        form = RegisterForm(formdata=MultiDict(payload), meta={'csrf': False})
+    else:
+        form = RegisterForm()
+
     if form.validate_on_submit():
-        # Check if email is already registered
-        existing_user = User.query.filter_by(email=form.email.data.strip().lower()).first()
-        if existing_user:
-            flash('Email already registered. Please log in.', 'warning')
-            return redirect(url_for('auth.login'))
+        try:
+            email = form.email.data.strip().lower()
+            existing_user = User.query.filter_by(email=email).first()
+            if existing_user:
+                if is_json_request:
+                    return jsonify(error='Email already registered.'), 409
+                flash('Email already registered. Please log in.', 'warning')
+                return redirect(url_for('auth.login'))
 
-        # Create new user (do NOT log them in yet)
-        user = User(
-            full_name=form.full_name.data,
-            email=form.email.data.strip().lower()
-        )
-        user.set_password(form.password.data)
+            user = User(full_name=form.full_name.data.strip(), email=email, is_active=False)
+            user.set_password(form.password.data)
 
-        # Assign default role
-        employee_role = Role.query.filter_by(name="Employee").first()
-        if employee_role:
-            user.roles.append(employee_role)
+            employee_role = Role.query.filter_by(name="Employee").first()
+            if employee_role:
+                user.roles.append(employee_role)
 
-        # Save user to database
-        db.session.add(user)
-        db.session.commit()
+            db.session.add(user)
+            db.session.flush()
+            token = user.get_token(purpose='confirm')
+            confirm_url = url_for('auth.confirm_email', token=token, _external=True)
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            current_app.logger.info("Registration rejected because a unique user field already exists.")
+            if is_json_request:
+                return jsonify(error='An account with these details already exists.'), 409
+            flash('An account with these details already exists.', 'warning')
+            return render_template('auth/register.html', form=form), 409
+        except SQLAlchemyError:
+            db.session.rollback()
+            current_app.logger.exception("Database error during user registration.")
+            if is_json_request:
+                return jsonify(error='Registration could not be completed. Please try again later.'), 500
+            flash('Registration could not be completed. Please try again later.', 'danger')
+            return render_template('auth/register.html', form=form), 500
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Unexpected error during user registration.")
+            if is_json_request:
+                return jsonify(error='Registration could not be completed. Please try again later.'), 500
+            flash('Registration could not be completed. Please try again later.', 'danger')
+            return render_template('auth/register.html', form=form), 500
 
-        # Generate email confirmation token
-        token = user.get_token(purpose='confirm')
-        confirm_url = url_for('auth.confirm_email', token=token, _external=True)
-
-        # Send confirmation email
+        email_sent = True
         try:
             msg = Message('Confirm your account', recipients=[user.email])
             msg.body = f'Please confirm your account by clicking the link: {confirm_url}'
             mail.send(msg)
-            flash('Registration successful! Check your email to confirm your account.', 'success')
-        except Exception as e:
-            # Fallback for development if email credentials aren't configured
-            print(f"\n📧 [DEVELOPMENT MODE] Email could not be sent: {e}")
-            print(f"🔗 Confirmation Link: {confirm_url}\n")
-            # Auto-confirm in development
-            user.is_active = True
-            db.session.commit()
-            flash('Registration successful! (Development Mode: Account auto-activated, confirmation link printed to console).', 'success')
+        except Exception:
+            email_sent = False
+            current_app.logger.exception("Failed to send the registration confirmation email.")
 
+        message = (
+            'Registration successful! Check your email to confirm your account.'
+            if email_sent else
+            'Registration was created, but the confirmation email could not be sent. Please contact support.'
+        )
+        if is_json_request:
+            return jsonify(message=message), 201
+        flash(message, 'success' if email_sent else 'warning')
         return redirect(url_for('auth.login'))
 
+    if is_json_request:
+        return jsonify(error='Please correct the registration details.', fields=form.errors), 400
     return render_template('auth/register.html', form=form)
 
 

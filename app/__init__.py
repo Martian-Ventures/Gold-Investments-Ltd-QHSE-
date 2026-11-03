@@ -31,16 +31,21 @@ def create_app(config_class=None):
     
     app.config.from_object(config_class)
     
-    # Override database URI for Vercel if needed
-    if os.environ.get('VERCEL'):
-        app.config['SQLALCHEMY_DATABASE_URI'] = (
-            f"postgresql://{os.environ.get('PGUSER')}:{os.environ.get('PGPASSWORD')}"
-            f"@{os.environ.get('PGHOST')}:{os.environ.get('PGPORT')}/{os.environ.get('PGDATABASE')}"
-        )
-    else:
-    # FORCE 5433 LOCALLY: Ignore the machine's broken default environment variable
+    if not os.environ.get('VERCEL'):
+        # FORCE 5433 LOCALLY: Ignore the machine's broken default environment variable
         app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:123@localhost:5433/qhse_db'
     
+    if os.environ.get('VERCEL'):
+        database_uri = Config.get_database_uri()
+        if not database_uri:
+            raise RuntimeError(
+                "Set POSTGRES_URL, DATABASE_URL, or PGUSER/PGPASSWORD/PGHOST/PGDATABASE in Vercel."
+            )
+        app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
+
+    if not app.config.get('SQLALCHEMY_DATABASE_URI'):
+        raise RuntimeError("A database URL must be configured before starting the application.")
+
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
